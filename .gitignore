@@ -7,7 +7,6 @@
 *.pytest_cache
 .vscode
 venv
-imgs
 experiments
 LICENSE
 .travis.yml
