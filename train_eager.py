@@ -17,6 +17,7 @@ argparser.add_argument(
 
 if __name__ == '__main__':
     args = argparser.parse_args()
+    print(args.config)
     config_parser = ConfigParser(args.config)
     
     # 1. create generator
