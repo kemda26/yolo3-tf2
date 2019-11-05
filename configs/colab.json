@@ -5,7 +5,7 @@
         "net_size":             288
     },
     "pretrained" : {
-        "keras_format":         "configs/svhn/weights.h5",
+        "keras_format":         "../drive/My Drive/Colab Notebooks/svhn/weights.h5",
         "darknet_format":       "yolov3.weights"
     },
     "train" : {
@@ -18,7 +18,7 @@
         "valid_annot_folder":   "datasets/annotation/test",
         "batch_size":           32,
         "learning_rate":        1e-4,
-        "save_folder":          "configs/svhn",
+        "save_folder":          "../drive/My Drive/Colab Notebooks/svhn/",
         "jitter":               false
     }
 }
