@@ -68,7 +68,7 @@ class ConfigParser(object):
     def create_generator(self):
         train_ann_fnames = self._get_train_anns()
         valid_ann_fnames = self._get_valid_anns()
-    
+        
         train_generator = BatchGenerator(train_ann_fnames,
                                          self._train_config["train_image_folder"],
                                          batch_size=self._train_config["batch_size"],
@@ -123,10 +123,8 @@ class ConfigParser(object):
     
     def _get_train_anns(self):
         ann_fnames = glob.glob(os.path.join(self._train_config["train_annot_folder"], "*.xml"))
-        print('train folder', ann_fnames[0])
         return ann_fnames
 
     def _get_valid_anns(self):
         ann_fnames = glob.glob(os.path.join(self._train_config["valid_annot_folder"], "*.xml"))
-        print('test folder', ann_fnames[0])
         return ann_fnames
