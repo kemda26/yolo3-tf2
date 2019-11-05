@@ -21,7 +21,7 @@
         "valid_annot_folder":   "../dataset/svhn/voc_format_annotation/train",
         "batch_size":           16,
         "learning_rate":        1e-4,
-        "save_folder":         "configs/svhn",
+        "save_folder":          "configs/svhn",
         "jitter":               false
     }
 }
@@ -123,8 +123,10 @@ class ConfigParser(object):
     
     def _get_train_anns(self):
         ann_fnames = glob.glob(os.path.join(self._train_config["train_annot_folder"], "*.xml"))
+        print('train folder', ann_fnames[0])
         return ann_fnames
 
     def _get_valid_anns(self):
         ann_fnames = glob.glob(os.path.join(self._train_config["valid_annot_folder"], "*.xml"))
+        print('test folder', ann_fnames[0])
         return ann_fnames
