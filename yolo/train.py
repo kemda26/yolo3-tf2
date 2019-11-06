@@ -26,7 +26,7 @@ def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, n
     history = []
     for i in range(epoch.numpy() + 1, num_epoches):
         # 1. update params
-        train_loss = _loop_train(model, optimizer, train_generator, i)
+        train_loss = _loop_train(model, optimizer, train_generator, i, ckpt_path)
         
         # 2. monitor validation loss
         if valid_generator:
