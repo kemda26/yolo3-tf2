@@ -41,6 +41,8 @@ def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, n
         if save_fname is not None and loss_value == min(history):
             print("    update weight {}".format(loss_value))
             model.save_weights("{}.h5".format(save_fname))
+            
+    model.save_weights("{}.h5".format('last_weights'))
 
     return history
 
