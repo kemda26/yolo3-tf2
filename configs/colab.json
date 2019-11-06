@@ -19,6 +19,7 @@
         "batch_size":           32,
         "learning_rate":        1e-4,
         "save_folder":          "../drive/My Drive/Colab Notebooks/svhn/",
+        "checkpoint_path":      "../drive/My Drive/Colab Notebooks/svhn/tf_ckpts",
         "jitter":               false
     }
 }

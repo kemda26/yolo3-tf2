@@ -113,10 +113,11 @@ class ConfigParser(object):
         return train_evaluator, valid_evaluator
 
     def get_train_params(self):
-        learning_rate=self._train_config["learning_rate"]
-        save_dname=self._train_config["save_folder"]
-        num_epoches=self._train_config["num_epoch"]
-        return learning_rate, save_dname, num_epoches
+        learning_rate = self._train_config['learning_rate']
+        save_dname = self._train_config['save_folder']
+        num_epoches = self._train_config['num_epoch']
+        checkpoint_path = self._train_config['checkpoint_path']
+        return learning_rate, save_dname, num_epoches, checkpoint_path
 
     def get_labels(self):
         return self._model_config["labels"]

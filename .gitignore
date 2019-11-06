@@ -12,3 +12,4 @@ LICENSE
 .travis.yml
 __pycache__
 weights.h5
+tf_ckpts
