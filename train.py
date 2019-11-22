@@ -17,17 +17,17 @@ argparser.add_argument(
 
 if __name__ == '__main__':
     args = argparser.parse_args()
-    print(args.config)
-    config_parser = ConfigParser(args.config)
-    
+    config = './configs/svhn.json'
+    config_parser = ConfigParser(config)
+
     # 1. create generator
-    train_generator, valid_generator = config_parser.create_generator()
-    
+    train_generator, valid_generator = config_parser.create_generator(valid_test=True)
+
     # 2. create model
     model = config_parser.create_model()
- 
+
     # 3. training
-    learning_rate, save_dname, n_epoches = config_parser.get_train_params()
+    learning_rate, save_dname, n_epoches, checkpoint_path = config_parser.get_train_params()
     train_fn(model,
              train_generator,
              valid_generator,

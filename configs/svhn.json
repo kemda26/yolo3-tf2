@@ -1,11 +1,12 @@
 {
     "model" : {
-        "anchors":              [10,13, 16,30, 33,23, 30,61, 62,45, 59,119, 116,90, 156,198, 373,326],
+        "arch":                 "mobilenet",
+        "anchors":              [23,121, 30,241, 40,174, 42,273, 53,316, 56,230, 66,303, 81,318, 104,337],
         "labels":               ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
         "net_size":             288
     },
     "pretrained" : {
-        "keras_format":         "configs/svhn/weights.h5",
+        "keras_format":         "configs/svhn/test/weights.h5",
         "darknet_format":       "yolov3.weights"
     },
     "train" : {
@@ -18,7 +19,7 @@
         "valid_annot_folder":   "",
         "batch_size":           2,
         "learning_rate":        1e-4,
-        "save_folder":          "configs/svhn",
+        "save_folder":          "configs/svhn/test",
         "checkpoint_path":      "./tf_ckpts",
         "jitter":               false
     }

@@ -4,21 +4,27 @@ import tensorflow as tf
 import numpy as np
 import cv2
 
-layers = tf.keras.layers
-models = tf.keras.models
-
-from yolo.net.bodynet import Bodynet
+from yolo.net.mobilenet import MobileNet
+from yolo.net.darknet import DarkNet
 from yolo.net.headnet import Headnet
 from yolo.net.weights import WeightReader
+
+# from mobilenet import MobileNet
+# from darknet import DarkNet
+# from headnet import Headnet
+# from weights import WeightReader
 
 
 # Yolo v3
 class Yolonet(tf.keras.Model):
-    def __init__(self, n_classes=80):
-        
+    def __init__(self, n_classes=10, arch='mobilenet'):
         super(Yolonet, self).__init__(name='')
         
-        self.body = Bodynet()
+        if arch == 'mobilenet':
+            self.body = MobileNet(input_shape=(288,288,3))
+        else:
+            self.body = DarkNet()
+
         self.head = Headnet(n_classes)
 
         self.num_layers = 110
@@ -30,6 +36,7 @@ class Yolonet(tf.keras.Model):
     
     def predict(self, input_array):
         f5, f4, f3 = self.call(tf.constant(input_array.astype(np.float32)))
+        # f5, f4, f3 = self.call(tf.constant(input_array))
         return f5.numpy(), f4.numpy(), f3.numpy()
 
     def call(self, input_tensor, training=False):
@@ -61,17 +68,20 @@ def preprocess_input(image, net_size):
         net_size : int
     """
     # resize the image to the new size
-    preprocess_img = cv2.resize(image/255., (net_size, net_size))
+    preprocess_img = cv2.resize(image / 255., (net_size, net_size))
     return np.expand_dims(preprocess_img, axis=0)
 
 
 if __name__ == '__main__':
-    inputs = tf.constant(np.random.randn(1, 256, 256, 3).astype(np.float32))
-    
+    inputs = tf.constant(np.random.randn(1, 288, 288, 3).astype(np.float32))
+    print(inputs.shape)
+
     # (1, 256, 256, 3) => (1, 8, 8, 1024)
     yolonet = Yolonet()
-    f5, f4, f3 = yolonet(inputs)
-    print(f5.shape, f4.shape, f3.shape)
-
-    for v in yolonet.variables:
-        print(v.name)
+    # f5, f4, f3 = yolonet(inputs)
+    x , y, z = yolonet.predict(inputs)
+    print(x.shape)
+    # print(f5.shape, f4.shape, f3.shape)
+    # print(yolonet.summary())
+    # for v in yolonet.variables:
+        # print(v.name)

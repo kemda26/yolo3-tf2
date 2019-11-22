@@ -40,6 +40,7 @@ if __name__ == '__main__':
     
     # 3. Run detection
     boxes, labels, probs = detector.detect(image, 0.5)
+    print(probs)
     
     # 4. draw detected boxes
     visualize_boxes(image, boxes, labels, probs, config_parser.get_labels())

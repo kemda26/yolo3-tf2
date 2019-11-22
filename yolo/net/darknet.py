@@ -3,13 +3,13 @@
 import tensorflow as tf
 
 layers = tf.keras.layers
-models = tf.keras.models
+# models = tf.keras.models
 
 
 # Darknet53 feature extractor
-class Bodynet(tf.keras.Model):
+class DarkNet(tf.keras.Model):
     def __init__(self):
-        super(Bodynet, self).__init__(name='')
+        super(DarkNet, self).__init__(name='')
         
         # (256, 256, 3)
         self.l0a = _ConvBlock(32, layer_idx=0, name="stage0")
@@ -184,7 +184,7 @@ if __name__ == '__main__':
     input_tensor = tf.constant(imgs)
     
     # (1, 256, 256, 3) => (1, 8, 8, 1024)
-    bodynet = Bodynet()
+    bodynet = DarkNet()
     s3, s4, s5 = bodynet(input_tensor)
     print(s3.shape, s4.shape, s5.shape)
 

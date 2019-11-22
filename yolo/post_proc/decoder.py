@@ -20,16 +20,19 @@ def postprocess_ouput(yolos, anchors, net_size, image_h, image_w, obj_thresh=0.5
     """
     anchors = np.array(anchors).reshape(3, 6)
     boxes = []
-
+    
     # 1. decode the output of the network
     for i in range(len(yolos)):
         boxes += decode_netout(yolos[i][0], anchors[3-(i+1)], obj_thresh, net_size)
+        # print('---')
+    # print(len(boxes))    
 
     # 2. correct box-scale to image size
     correct_yolo_boxes(boxes, image_h, image_w)
 
     # 3. suppress non-maximal boxes
     nms_boxes(boxes, nms_thresh)
+
     return boxes
 
 
@@ -40,8 +43,10 @@ def decode_netout(netout, anchors, obj_thresh, net_size, nb_box=3):
         anchors
         
     """
+    
     n_rows, n_cols = netout.shape[:2]
     netout = netout.reshape((n_rows, n_cols, nb_box, -1))
+    # print(netout.shape)
 
     boxes = []
     for row in range(n_rows):
@@ -52,7 +57,7 @@ def decode_netout(netout, anchors, obj_thresh, net_size, nb_box=3):
                 objectness, classes = _activate_probs(netout[row, col, b, IDX_OBJECTNESS],
                                                       netout[row, col, b, IDX_CLASS_PROB:],
                                                       obj_thresh)
-
+                # print(objectness)
                 # 2. scale normalize                
                 x /= n_cols
                 y /= n_rows
@@ -62,7 +67,7 @@ def decode_netout(netout, anchors, obj_thresh, net_size, nb_box=3):
                 if objectness > obj_thresh:
                     box = BoundBox(x, y, w, h, objectness, classes)
                     boxes.append(box)
-
+    
     return boxes
 
 
@@ -87,6 +92,7 @@ def _activate_probs(objectness, classes, obj_thresh=0.3):
         objectness_prob : (n_rows, n_cols, n_box)
         classes_conditional_probs : (n_rows, n_cols, n_box, n_classes)
     """
+
     # 1. sigmoid activation
     objectness_prob = _sigmoid(objectness)
     classes_probs = _sigmoid(classes)

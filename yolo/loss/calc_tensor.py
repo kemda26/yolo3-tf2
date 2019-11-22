@@ -50,7 +50,6 @@ class LossTensorCalculator(object):
         self.image_size = image_size        # (h, w)-ordered
 
     def run(self, y_true, y_pred, anchors=[90, 95, 92, 154, 139, 281]):
-
         # 1. setup
         y_pred = tf.reshape(y_pred, y_true.shape)
         object_mask = tf.expand_dims(y_true[..., 4], 4)

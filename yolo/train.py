@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 
 import tensorflow as tf
 import os
@@ -7,18 +6,21 @@ from tqdm import tqdm
 from yolo.loss import loss_fn
 
 
-def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, num_epoches=500, save_dname=None, ckpt_path='./tf_ckpts'):
+def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, num_epoches=500, save_dname=None, ckpt_path='./tf_ckpts', checkpoint=False):
     
     save_fname = _setup(save_dname)
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
     epoch = tf.Variable(-1)
-    ckpt = tf.train.Checkpoint(epoch=epoch, optimizer=optimizer, model=model)
-    manager = tf.train.CheckpointManager(ckpt, ckpt_path, max_to_keep=1)
-    if manager.latest_checkpoint:
-        print("Restored from {}".format(manager.latest_checkpoint))
-        status = ckpt.restore(manager.latest_checkpoint)
-        # status.assert_consumed()
+    if checkpoint:
+        ckpt = tf.train.Checkpoint(epoch=epoch, optimizer=optimizer, model=model)
+        manager = tf.train.CheckpointManager(ckpt, ckpt_path, max_to_keep=1)
+        if manager.latest_checkpoint:
+            print("Restored from {}".format(manager.latest_checkpoint))
+            status = ckpt.restore(manager.latest_checkpoint)
+            # status.assert_consumed()
+        else:
+            print("\n    Initializing from scratch.")
     else:
         print("\n    Initializing from scratch.")
 
@@ -42,12 +44,12 @@ def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, n
             print("    update weight {}".format(loss_value))
             model.save_weights("{}.h5".format(save_fname))
             
-    model.save_weights("{}.h5".format('last_weights'))
+    # model.save_weights("{}.h5".format('last_weights'))
 
     return history
 
 
-def _loop_train(model, optimizer, generator, epoch, ckpt_path):
+def _loop_train(model, optimizer, generator, epoch, ckpt_path, checkpoint=False):
     # one epoch
     
     n_steps = generator.steps_per_epoch
@@ -60,9 +62,10 @@ def _loop_train(model, optimizer, generator, epoch, ckpt_path):
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
     loss_value /= generator.steps_per_epoch
 
-    ckpt = tf.train.Checkpoint(epoch=tf.Variable(epoch), optimizer=optimizer, model=model)
-    manager = tf.train.CheckpointManager(ckpt, ckpt_path, max_to_keep=1)
-    manager.save(epoch)
+    if checkpoint:
+        ckpt = tf.train.Checkpoint(epoch=tf.Variable(epoch), optimizer=optimizer, model=model)
+        manager = tf.train.CheckpointManager(ckpt, ckpt_path, max_to_keep=1)
+        manager.save(epoch)
 
     return loss_value
 

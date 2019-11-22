@@ -28,8 +28,10 @@ class YoloDetector(object):
         """
         image_h, image_w, _ = image.shape
         new_image = preprocess_input(image, self._net_size)
+        
         # 3. predict
         yolos = self._model.predict(new_image)
+        
         boxes_ = postprocess_ouput(yolos, self._anchors, self._net_size, image_h, image_w)
         
         if len(boxes_) > 0:

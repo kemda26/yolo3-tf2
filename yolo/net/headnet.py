@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 
 import tensorflow as tf
 
@@ -8,10 +7,11 @@ models = tf.keras.models
 
 # Darknet53 feature extractor
 class Headnet(tf.keras.Model):
-    def __init__(self, n_classes=80):
+    def __init__(self, n_classes=10):
         super(Headnet, self).__init__(name='')
-        n_features = 3 * (n_classes+1+4)
+        n_features = 3 * (n_classes + 1 + 4)
         
+        #
         self.stage5_conv5 = _Conv5([512, 1024, 512, 1024, 512],
                                    [75, 76, 77, 78, 79])
         self.stage5_conv2 = _Conv2([1024, n_features],
@@ -19,6 +19,7 @@ class Headnet(tf.keras.Model):
                                    "detection_layer_1_{}".format(n_features))
         self.stage5_upsampling = _Upsamling([256], [84])
 
+        #
         self.stage4_conv5 = _Conv5([256, 512, 256, 512, 256],
                                    [87, 88, 89, 90, 91])
         self.stage4_conv2 = _Conv2([512, n_features],
@@ -26,6 +27,7 @@ class Headnet(tf.keras.Model):
                                    "detection_layer_2_{}".format(n_features))
         self.stage4_upsampling = _Upsamling([128], [96])
 
+        #
         self.stage3_conv5 = _Conv5([128, 256, 128, 256, 128],
                                    [99, 100, 101, 102, 103])
         self.stage3_conv2 = _Conv2([256, n_features],
@@ -94,18 +96,23 @@ class _Conv5(tf.keras.Model):
         x = self.conv1(input_tensor)
         x = self.bn1(x, training=training)
         x = tf.nn.leaky_relu(x, alpha=0.1)
+        
         x = self.conv2(x)
         x = self.bn2(x, training=training)
         x = tf.nn.leaky_relu(x, alpha=0.1)
+
         x = self.conv3(x)
         x = self.bn3(x, training=training)
         x = tf.nn.leaky_relu(x, alpha=0.1)
+
         x = self.conv4(x)
         x = self.bn4(x, training=training)
         x = tf.nn.leaky_relu(x, alpha=0.1)
+
         x = self.conv5(x)
         x = self.bn5(x, training=training)
         x = tf.nn.leaky_relu(x, alpha=0.1)
+
         return x
 
 
