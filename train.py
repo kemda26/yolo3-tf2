@@ -17,7 +17,8 @@ argparser.add_argument(
 
 if __name__ == '__main__':
     args = argparser.parse_args()
-    config = './configs/svhn.json'
+    # config = './configs/svhn.json'
+    config = args.config
     config_parser = ConfigParser(config)
 
     # 1. create generator

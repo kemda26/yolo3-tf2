@@ -6,7 +6,7 @@
         "net_size":             288
     },
     "pretrained" : {
-        "keras_format":         "../drive/My Drive/Colab Notebooks/svhn/weights.h5",
+        "keras_format":         "../drive/My Drive/Colab Notebooks/mobilenet/weights.h5",
         "darknet_format":       "yolov3.weights"
     },
     "train" : {
@@ -15,12 +15,12 @@
         "num_epoch":            40,
         "train_image_folder":   "datasets/train",
         "train_annot_folder":   "datasets/annotation/train",
-        "valid_image_folder":   "datasets/test",
-        "valid_annot_folder":   "datasets/annotation/test",
+        "valid_image_folder":   "",
+        "valid_annot_folder":   "",
         "batch_size":           32,
         "learning_rate":        1e-4,
-        "save_folder":          "../drive/My Drive/Colab Notebooks/svhn/",
-        "checkpoint_path":      "../drive/My Drive/Colab Notebooks/svhn/tf_ckpts",
+        "save_folder":          "../drive/My Drive/Colab Notebooks/mobilenet/",
+        "checkpoint_path":      "../drive/My Drive/Colab Notebooks/mobilenet/tf_ckpts",
         "jitter":               false
     }
 }
