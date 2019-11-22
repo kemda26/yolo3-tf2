@@ -93,7 +93,7 @@ class ConfigParser(object):
                                          shuffle=True)
         
         valid_generator = BatchGenerator(valid_ann_fnames,
-                                         self._train_config["valid_image_folder"],
+                                         self._train_config["train_image_folder"],
                                          batch_size=self._train_config["batch_size"],
                                          labels=self._model_config["labels"],
                                          anchors=self._model_config["anchors"],
