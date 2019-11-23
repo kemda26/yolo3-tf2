@@ -6,7 +6,7 @@
         "net_size":             288
     },
     "pretrained" : {
-        "keras_format":         "configs/svhn/darknet/weights.h5",
+        "keras_format":         "weights/darknet/weights.h5",
         "darknet_format":       "yolov3.weights"
     },
     "train" : {
@@ -19,7 +19,7 @@
         "valid_annot_folder":   "",
         "batch_size":           2,
         "learning_rate":        1e-4,
-        "save_folder":          "configs/svhn/darknet",
+        "save_folder":          "weights/darknet",
         "checkpoint_path":      "./tf_ckpts",
         "jitter":               false
     }

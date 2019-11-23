@@ -21,7 +21,7 @@ class Yolonet(tf.keras.Model):
         super(Yolonet, self).__init__(name='')
         
         if arch == 'mobilenet':
-            self.body = MobileNet(input_shape=(288,288,3))
+            self.body = MobileNet(input_shape=(224,224,3))
         else:
             self.body = DarkNet()
 
@@ -30,19 +30,23 @@ class Yolonet(tf.keras.Model):
         self.num_layers = 110
         self._init_vars()
 
+
     def load_darknet_params(self, weights_file, skip_detect_layer=False):
         weight_reader = WeightReader(weights_file)
         weight_reader.load_weights(self, skip_detect_layer)
     
+
     def predict(self, input_array):
         f5, f4, f3 = self.call(tf.constant(input_array.astype(np.float32)))
         # f5, f4, f3 = self.call(tf.constant(input_array))
         return f5.numpy(), f4.numpy(), f3.numpy()
 
+
     def call(self, input_tensor, training=False):
         s3, s4, s5 = self.body(input_tensor, training)
         f5, f4, f3 = self.head(s3, s4, s5, training)
         return f5, f4, f3
+
 
     def get_variables(self, layer_idx, suffix=None):
         if suffix:
@@ -55,9 +59,14 @@ class Yolonet(tf.keras.Model):
                 variables.append(v)
         return variables
 
+
     def _init_vars(self):
         sample = tf.constant(np.random.randn(1, 224, 224, 3).astype(np.float32))
         self.call(sample, training=False)
+
+
+    def fit_generator(self):
+        pass
 
 
 def preprocess_input(image, net_size):
@@ -79,7 +88,7 @@ if __name__ == '__main__':
     # (1, 256, 256, 3) => (1, 8, 8, 1024)
     yolonet = Yolonet()
     # f5, f4, f3 = yolonet(inputs)
-    x , y, z = yolonet.predict(inputs)
+    x , y, z = yolonet(inputs)
     print(x.shape)
     # print(f5.shape, f4.shape, f3.shape)
     # print(yolonet.summary())

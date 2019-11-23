@@ -14,3 +14,5 @@ __pycache__
 weights.h5
 tf_ckpts
 keras-yolo3
+test.py
+o.txt

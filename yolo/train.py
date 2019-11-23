@@ -28,7 +28,7 @@ def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, n
     history = []
     for i in range(epoch.numpy() + 1, num_epoches):
         # 1. update params
-        train_loss = _loop_train(model, optimizer, train_generator, i, ckpt_path)
+        train_loss = _loop_train(model, optimizer, train_generator, i, ckpt_path, checkpoint)
         
         # 2. monitor validation loss
         if valid_generator:
@@ -41,7 +41,7 @@ def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, n
         # 3. update weights
         history.append(loss_value)
         if save_fname is not None and loss_value == min(history):
-            print("    update weight {}".format(loss_value))
+            print("    update weight with loss: {}".format(loss_value))
             model.save_weights("{}.h5".format(save_fname))
             
     # model.save_weights("{}.h5".format('last_weights'))
@@ -49,7 +49,7 @@ def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, n
     return history
 
 
-def _loop_train(model, optimizer, generator, epoch, ckpt_path, checkpoint=False):
+def _loop_train(model, optimizer, generator, epoch, ckpt_path, checkpoint):
     # one epoch
     
     n_steps = generator.steps_per_epoch
@@ -68,6 +68,15 @@ def _loop_train(model, optimizer, generator, epoch, ckpt_path, checkpoint=False)
         manager.save(epoch)
 
     return loss_value
+
+
+def _grad_fn(model, images_tensor, list_y_trues):
+    print(images_tensor.shape)
+    with tf.GradientTape() as tape:
+        logits = model(images_tensor)
+        loss = loss_fn(list_y_trues, logits)
+        # print("loss = ", loss)
+    return tape.gradient(loss, model.trainable_variables), loss
 
 
 def _loop_validation(model, generator):
@@ -91,14 +100,6 @@ def _setup(save_dname):
     else:
         save_fname = None
     return save_fname
-
-
-def _grad_fn(model, images_tensor, list_y_trues):
-    with tf.GradientTape() as tape:
-        logits = model(images_tensor)
-        loss = loss_fn(list_y_trues, logits)
-        # print("loss = ", loss)
-    return tape.gradient(loss, model.trainable_variables), loss
 
 
 if __name__ == '__main__':

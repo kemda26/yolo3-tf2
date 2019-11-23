@@ -3,24 +3,24 @@
         "arch":                 "mobilenet",
         "anchors":              [23,121, 30,241, 40,174, 42,273, 53,316, 56,230, 66,303, 81,318, 104,337],
         "labels":               ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
-        "net_size":             288
+        "net_size":             224
     },
     "pretrained" : {
-        "keras_format":         "../drive/My Drive/Colab Notebooks/mobilenet224/weights.h5",
+        "keras_format":         "weights/mobilenet224/weights.h5",
         "darknet_format":       "yolov3.weights"
     },
     "train" : {
-        "min_size":             288,
-        "max_size":             288,
+        "min_size":             224,
+        "max_size":             224,
         "num_epoch":            40,
-        "train_image_folder":   "datasets/train",
-        "train_annot_folder":   "datasets/annotation/train",
+        "train_image_folder":   "datasets/train/",
+        "train_annot_folder":   "datasets/annotation/train/",
         "valid_image_folder":   "",
         "valid_annot_folder":   "",
         "batch_size":           32,
-        "learning_rate":        1e-4,
-        "save_folder":          "../drive/My Drive/Colab Notebooks/mobilenet224/",
-        "checkpoint_path":      "../drive/My Drive/Colab Notebooks/mobilenet224/tf_ckpts",
+        "learning_rate":        1e-3,
+        "save_folder":          "weights/mobilenet224",
+        "checkpoint_path":      "./tf_ckpts",
         "jitter":               false
     }
 }

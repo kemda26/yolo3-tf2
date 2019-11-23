@@ -6,7 +6,7 @@
         "net_size":             288
     },
     "pretrained" : {
-        "keras_format":         "configs/svhn/mobilenet/weights.h5",
+        "keras_format":         "weights/pps/weights.h5",
         "darknet_format":       "yolov3.weights"
     },
     "train" : {
@@ -19,7 +19,7 @@
         "valid_annot_folder":   "",
         "batch_size":           48,
         "learning_rate":        1e-4,
-        "save_folder":          "configs/svhn/mobilenet/",
+        "save_folder":          "weights/pps/",
         "checkpoint_path":      "./tf_ckpts",
         "jitter":               false
     }
