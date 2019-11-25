@@ -7,9 +7,9 @@ from tqdm import tqdm
 from yolo.loss import loss_fn
 
 
-def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, num_epoches=500, save_dname=None, ckpt_path='./tf_ckpts', checkpoint=False):
+def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, num_epoches=500, save_dir=None, weight_name='weights', ckpt_path='./tf_ckpts', checkpoint=False):
     
-    save_fname = _setup(save_dname)
+    save_file = _setup(save_dir=save_dir, weight_name=weight_name)
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
     # experiment = comet.Experiment(project_name='yolo3', workspace='kemda26')
 
@@ -43,9 +43,9 @@ def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, n
 
         # 3. update weights
         history.append(loss_value)
-        if save_fname is not None and loss_value == min(history):
+        if save_file is not None and loss_value == min(history):
             print("    update weight with loss: {}".format(loss_value))
-            model.save_weights("{}.h5".format(save_fname))
+            model.save_weights("{}.h5".format(save_file))
             
         # model.save_weights("{}.h5".format('last_weights'))
 
@@ -95,14 +95,14 @@ def _loop_validation(model, generator):
     return loss_value
 
 
-def _setup(save_dname):
-    if save_dname:
-        if not os.path.exists(save_dname):
-            os.makedirs(save_dname)
-        save_fname = os.path.join(save_dname, "weights")
+def _setup(save_dir, weight_name='weights'):
+    if save_dir:
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        file_name = os.path.join(save_dir, weight_name)
     else:
-        save_fname = None
-    return save_fname
+        file_name = None
+    return file_name
 
 
 if __name__ == '__main__':

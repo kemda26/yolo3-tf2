@@ -6,7 +6,7 @@
         "net_size":             224
     },
     "pretrained" : {
-        "keras_format":         "../drive/My Drive/Colab Notebooks/mobilenet224/weights.h5",
+        "keras_format":         "../drive/My Drive/Colab Notebooks/mobilenet224/mobilenet224.h5",
         "darknet_format":       "yolov3.weights"
     },
     "train" : {
@@ -18,8 +18,9 @@
         "valid_image_folder":   "",
         "valid_annot_folder":   "",
         "batch_size":           32,
-        "learning_rate":        0.0003,
+        "learning_rate":        0.0001,
         "save_folder":          "../drive/My Drive/Colab Notebooks/mobilenet224/",
+        "weight_name":          "mobilenet224",
         "checkpoint_path":      "../drive/My Drive/Colab Notebooks/mobilenet224/tf_ckpts",
         "jitter":               false
     }

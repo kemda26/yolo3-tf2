@@ -20,6 +20,7 @@
         "batch_size":           2,
         "learning_rate":        1e-4,
         "save_folder":          "weights/mobilenet",
+        "weight_name":          "weights",
         "checkpoint_path":      "./tf_ckpts",
         "jitter":               false
     }

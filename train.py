@@ -27,11 +27,12 @@ if __name__ == '__main__':
     model = config_parser.create_model()
 
     # 3. training
-    learning_rate, save_dname, n_epoches, checkpoint_path = config_parser.get_train_params()
+    learning_rate, save_dir, weight_name, n_epoches, checkpoint_path = config_parser.get_train_params()
     train_fn(model,
             train_generator,
             valid_generator,
             learning_rate=learning_rate,
-            save_dname=save_dname,
+            save_dir=save_dir,
+            weight_name=weight_name,
             num_epoches=n_epoches)
 

@@ -20,6 +20,7 @@
         "batch_size":           32,
         "learning_rate":        1e-4,
         "save_folder":          "../drive/My Drive/Colab Notebooks/mobilenet224/",
+        "weight_name":          "weights",
         "checkpoint_path":      "../drive/My Drive/Colab Notebooks/mobilenet224/tf_ckpts",
         "jitter":               false
     }
