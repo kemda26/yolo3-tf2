@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import tensorflow as tf
 import argparse
 from yolo.train import train_fn
 from yolo.config import ConfigParser
@@ -22,7 +21,7 @@ if __name__ == '__main__':
     config_parser = ConfigParser(config)
 
     # 1. create generator
-    train_generator, valid_generator = config_parser.create_generator(valid_test=True)
+    train_generator, valid_generator = config_parser.create_generator(split_train_valid=True)
 
     # 2. create model
     model = config_parser.create_model()
@@ -30,9 +29,9 @@ if __name__ == '__main__':
     # 3. training
     learning_rate, save_dname, n_epoches, checkpoint_path = config_parser.get_train_params()
     train_fn(model,
-             train_generator,
-             valid_generator,
-             learning_rate=learning_rate,
-             save_dname=save_dname,
-             num_epoches=n_epoches)
+            train_generator,
+            valid_generator,
+            learning_rate=learning_rate,
+            save_dname=save_dname,
+            num_epoches=n_epoches)
 

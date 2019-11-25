@@ -1,4 +1,5 @@
 
+# import comet_ml as comet
 import tensorflow as tf
 import os
 from tqdm import tqdm
@@ -10,6 +11,7 @@ def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, n
     
     save_fname = _setup(save_dname)
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+    # experiment = comet.Experiment(project_name='yolo3', workspace='kemda26')
 
     epoch = tf.Variable(-1)
     if checkpoint:
@@ -24,6 +26,7 @@ def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, n
     else:
         print("\n    Initializing from scratch.")
 
+    # with tf.compat.v1.Session() as sess:
 
     history = []
     for i in range(epoch.numpy() + 1, num_epoches):
@@ -44,7 +47,7 @@ def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, n
             print("    update weight with loss: {}".format(loss_value))
             model.save_weights("{}.h5".format(save_fname))
             
-    # model.save_weights("{}.h5".format('last_weights'))
+        # model.save_weights("{}.h5".format('last_weights'))
 
     return history
 
@@ -71,7 +74,7 @@ def _loop_train(model, optimizer, generator, epoch, ckpt_path, checkpoint):
 
 
 def _grad_fn(model, images_tensor, list_y_trues):
-    print(images_tensor.shape)
+    # print(images_tensor.shape)
     with tf.GradientTape() as tape:
         logits = model(images_tensor)
         loss = loss_fn(list_y_trues, logits)

@@ -16,3 +16,4 @@ tf_ckpts
 keras-yolo3
 test.py
 o.txt
+.comet.config

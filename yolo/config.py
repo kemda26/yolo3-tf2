@@ -1,17 +1,11 @@
 # -*- coding: utf-8 -*-
-
 """
 {
     "model" : {
         "anchors":              [10,13, 16,30, 33,23, 30,61, 62,45, 59,119, 116,90, 156,198, 373,326],
         "labels":               ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
         "net_size":               288
-    },
-    "pretrained" : {
-        "keras_format":             "",
-        "darknet_format":           "yolov3.weights"
-    },
-    "train" : {
+    train" : {
         "min_size":             288,
         "max_size":             288,
         "num_epoch":            35,
@@ -71,39 +65,42 @@ class ConfigParser(object):
         return d
 
 
-    def create_generator(self, valid_test=False):
+    def create_generator(self, split_train_valid=False):
         train_ann_fnames = self._get_train_anns()
         valid_ann_fnames = self._get_valid_anns()
+        img_folder = 'valid_image_folder'
 
-        if len(valid_ann_fnames) == 0:
+        if split_train_valid:
             train_valid_split = int(0.8*len(train_ann_fnames))
+            print(train_valid_split)
             np.random.seed(0)
             np.random.shuffle(train_ann_fnames)
             np.random.seed()
-            train_ann_fnames, valid_ann_fnames = train_ann_fnames[:train_valid_split], train_ann_fnames[train_valid_split:]
 
-        train_generator = BatchGenerator(train_ann_fnames,
-                                         self._train_config["train_image_folder"],
-                                         batch_size=self._train_config["batch_size"],
-                                         labels=self._model_config["labels"],
-                                         anchors=self._model_config["anchors"],
-                                         min_net_size=self._train_config["min_size"],
-                                         max_net_size=self._train_config["max_size"],
-                                         jitter=self._train_config["jitter"],
-                                         shuffle=True)
+            img_folder = 'train_image_folder'
+            train_ann_fnames, valid_ann_fnames = train_ann_fnames[:train_valid_split], train_ann_fnames[train_valid_split:]
+            # valid_generator = None
         
         valid_generator = BatchGenerator(valid_ann_fnames,
-                                         self._train_config["train_image_folder"],
-                                         batch_size=self._train_config["batch_size"],
-                                         labels=self._model_config["labels"],
-                                         anchors=self._model_config["anchors"],
-                                         min_net_size=self._model_config["net_size"],
-                                         max_net_size=self._model_config["net_size"],
-                                         jitter=False,
-                                         shuffle=False)
-        
-        if valid_test == False:
-            valid_generator = None
+                                        self._train_config[img_folder],
+                                        batch_size=self._train_config["batch_size"],
+                                        labels=self._model_config["labels"],
+                                        anchors=self._model_config["anchors"],
+                                        min_net_size=self._model_config["net_size"],
+                                        max_net_size=self._model_config["net_size"],
+                                        jitter=False,
+                                        shuffle=False)
+
+        train_generator = BatchGenerator(train_ann_fnames,
+                                        self._train_config["train_image_folder"],
+                                        batch_size=self._train_config["batch_size"],
+                                        labels=self._model_config["labels"],
+                                        anchors=self._model_config["anchors"],
+                                        min_net_size=self._train_config["min_size"],
+                                        max_net_size=self._train_config["max_size"],
+                                        jitter=self._train_config["jitter"],
+                                        shuffle=True)
+
         print("Training samples : {}, Validation samples : {}".format(len(train_ann_fnames), len(valid_ann_fnames)))
         return train_generator, valid_generator
 
