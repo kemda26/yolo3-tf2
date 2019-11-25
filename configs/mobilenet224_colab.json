@@ -18,7 +18,7 @@
         "valid_image_folder":   "",
         "valid_annot_folder":   "",
         "batch_size":           32,
-        "learning_rate":        1e-3,
+        "learning_rate":        0.0003,
         "save_folder":          "../drive/My Drive/Colab Notebooks/mobilenet224/",
         "checkpoint_path":      "../drive/My Drive/Colab Notebooks/mobilenet224/tf_ckpts",
         "jitter":               false
