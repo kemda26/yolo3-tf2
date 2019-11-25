@@ -17,6 +17,8 @@
         "train_annot_folder":   "tests/dataset/svhn/anns",
         "valid_image_folder":   "",
         "valid_annot_folder":   "",
+        "test_image_folder":    "tests/dataset/svhn/imgs/",
+        "test_annot_folder":    "tests/dataset/svhn/anns/",
         "batch_size":           1,
         "learning_rate":        0.001,
         "save_folder":          "weights/test",

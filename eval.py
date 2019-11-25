@@ -26,9 +26,10 @@ argparser.add_argument(
 if __name__ == '__main__':
     from yolo.config import ConfigParser
     args = argparser.parse_args()
+    print(args)
     config_parser = ConfigParser(args.config)
     model = config_parser.create_model()
-    evaluator, _ = config_parser.create_evaluator(model)
+    evaluator= config_parser.create_evaluator(model)
 
     score = evaluator.run(threshold=args.threshold,
                           save_dname=args.save_dname)

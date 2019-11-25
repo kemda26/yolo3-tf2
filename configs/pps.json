@@ -17,6 +17,8 @@
         "train_annot_folder":   "datasets/annotation/train/",
         "valid_image_folder":   "",
         "valid_annot_folder":   "",
+        "test_image_folder":    "datasets/test/",
+        "test_annot_folder":    "datasets/annotation/test/",
         "batch_size":           48,
         "learning_rate":        1e-4,
         "save_folder":          "weights/pps/",

@@ -72,7 +72,6 @@ class ConfigParser(object):
 
         if split_train_valid:
             train_valid_split = int(0.8*len(train_ann_fnames))
-            print(train_valid_split)
             np.random.seed(55)
             np.random.shuffle(train_ann_fnames)
             np.random.seed()
@@ -108,21 +107,21 @@ class ConfigParser(object):
     def create_evaluator(self, model):
 
         detector = self.create_detector(model)
-        train_ann_fnames = self._get_train_anns()
-        valid_ann_fnames = self._get_valid_anns()
+        # train_ann_fnames = self._get_train_anns()
+        test_ann_fnames = self._get_test_anns()
 
-        train_evaluator = Evaluator(detector,
-                                    self._model_config["labels"],
-                                    train_ann_fnames,
-                                    self._train_config["train_image_folder"])
-        if len(valid_ann_fnames) > 0:
-            valid_evaluator = Evaluator(detector,
+        # train_evaluator = Evaluator(detector,
+        #                             self._model_config["labels"],
+        #                             train_ann_fnames,
+        #                             self._train_config["train_image_folder"])
+        if len(test_ann_fnames) > 0:
+            test_evaluator = Evaluator(detector,
                                         self._model_config["labels"],
-                                        valid_ann_fnames,
-                                        self._train_config["valid_image_folder"])
+                                        test_ann_fnames,
+                                        self._train_config["test_image_folder"])
         else:
-            valid_evaluator = None
-        return train_evaluator, valid_evaluator
+            test_evaluator = None
+        return test_evaluator
 
 
     def get_train_params(self):
@@ -145,4 +144,9 @@ class ConfigParser(object):
 
     def _get_valid_anns(self):
         ann_fnames = glob.glob(os.path.join(self._train_config["valid_annot_folder"], "*.xml"))
+        return ann_fnames
+
+
+    def _get_test_anns(self):
+        ann_fnames = glob.glob(os.path.join(self._train_config["test_annot_folder"], "*.xml"))
         return ann_fnames
