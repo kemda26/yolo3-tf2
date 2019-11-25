@@ -73,7 +73,7 @@ class ConfigParser(object):
         if split_train_valid:
             train_valid_split = int(0.8*len(train_ann_fnames))
             print(train_valid_split)
-            np.random.seed(0)
+            np.random.seed(55)
             np.random.shuffle(train_ann_fnames)
             np.random.seed()
 
