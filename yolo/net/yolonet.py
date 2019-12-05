@@ -8,27 +8,31 @@ from yolo.net.mobilenet import MobileNet
 from yolo.net.darknet import DarkNet
 from yolo.net.headnet import Headnet
 from yolo.net.weights import WeightReader
+from yolo.net.effnet import EfficientNet
 
 # from mobilenet import MobileNet
 # from darknet import DarkNet
 # from headnet import Headnet
 # from weights import WeightReader
+# from effnet import EfficientNet
 
 
 # Yolo v3
 class Yolonet(tf.keras.Model):
-    def __init__(self, n_classes=10, arch='mobilenet'):
+    def __init__(self, n_classes=10, arch='effnetb0'):
         super(Yolonet, self).__init__(name='')
         
         if arch == 'mobilenet':
             self.body = MobileNet(input_shape=(224,224,3))
+        elif arch == 'effnetb0':
+            self.body = EfficientNet(pretrained=None)
         else:
             self.body = DarkNet()
 
         self.head = Headnet(n_classes)
 
         self.num_layers = 110
-        self._init_vars()
+        # self._init_vars()
 
 
     def load_darknet_params(self, weights_file, skip_detect_layer=False):
@@ -44,6 +48,7 @@ class Yolonet(tf.keras.Model):
 
     def call(self, input_tensor, training=False):
         s3, s4, s5 = self.body(input_tensor, training)
+        print('shape',s3.shape, s4.shape, s5.shape)
         f5, f4, f3 = self.head(s3, s4, s5, training)
         return f5, f4, f3
 
@@ -82,15 +87,14 @@ def preprocess_input(image, net_size):
 
 
 if __name__ == '__main__':
-    inputs = tf.constant(np.random.randn(1, 288, 288, 3).astype(np.float32))
-    print(inputs.shape)
+    inputs = tf.constant(np.random.randn(1, 224, 224, 3).astype(np.float32))
+    # print(inputs.shape)
 
     # (1, 256, 256, 3) => (1, 8, 8, 1024)
     yolonet = Yolonet()
-    # f5, f4, f3 = yolonet(inputs)
-    x , y, z = yolonet(inputs)
-    print(x.shape)
+    f5, f4, f3 = yolonet(inputs)
     # print(f5.shape, f4.shape, f3.shape)
+    
     # print(yolonet.summary())
     # for v in yolonet.variables:
         # print(v.name)

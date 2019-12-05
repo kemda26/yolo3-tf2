@@ -26,7 +26,7 @@ def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, n
     else:
         print("\n    Initializing from scratch.")
 
-    # with tf.compat.v1.Session() as sess:
+    
 
     history = []
     for i in range(epoch.numpy() + 1, num_epoches):

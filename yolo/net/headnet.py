@@ -11,45 +11,50 @@ class Headnet(tf.keras.Model):
         super(Headnet, self).__init__(name='')
         n_features = 3 * (n_classes + 1 + 4)
         
+        _filters = {'effnet': [1280, 672, 240], 'norm': [1024, 512, 256]} 
+
         #
-        self.stage5_conv5 = _Conv5([512, 1024, 512, 1024, 512],
+        self.scale1_conv5 = _Conv5([512, 1024, 512, 1024, 512],
                                    [75, 76, 77, 78, 79])
-        self.stage5_conv2 = _Conv2([1024, n_features],
+        self.scale1_conv2 = _Conv2([_filters['norm'][0], n_features],
                                    [80, 81],
                                    "detection_layer_1_{}".format(n_features))
-        self.stage5_upsampling = _Upsamling([256], [84])
+        self.scale1_upsampling = _Upsamling([256], [84])
 
         #
-        self.stage4_conv5 = _Conv5([256, 512, 256, 512, 256],
+        self.scale2_conv5 = _Conv5([256, 512, 256, 512, 256],
                                    [87, 88, 89, 90, 91])
-        self.stage4_conv2 = _Conv2([512, n_features],
+        self.scale2_conv2 = _Conv2([_filters['norm'][1], n_features],
                                    [92, 93],
                                    "detection_layer_2_{}".format(n_features))
-        self.stage4_upsampling = _Upsamling([128], [96])
+        self.scale2_upsampling = _Upsamling([128], [96])
 
         #
-        self.stage3_conv5 = _Conv5([128, 256, 128, 256, 128],
+        self.scale3_conv5 = _Conv5([128, 256, 128, 256, 128],
                                    [99, 100, 101, 102, 103])
-        self.stage3_conv2 = _Conv2([256, n_features],
+        self.scale3_conv2 = _Conv2([_filters['norm'][2], n_features],
                                    [104, 105],
                                    "detection_layer_3_{}".format(n_features))
         self.num_layers = 106
-        self._init_vars()
+        # self._init_vars()
+
 
     def call(self, stage3_in, stage4_in, stage5_in, training=False):
-        x = self.stage5_conv5(stage5_in, training)
-        stage5_output = self.stage5_conv2(x, training)
+        x = self.scale1_conv5(stage5_in, training)
+        scale1_output = self.scale1_conv2(x, training)
 
-        x = self.stage5_upsampling(x, training)
+        x = self.scale1_upsampling(x, training)
         x = layers.concatenate([x, stage4_in])
-        x = self.stage4_conv5(x, training)
-        stage4_output = self.stage4_conv2(x, training)
+        x = self.scale2_conv5(x, training)
+        scale2_output = self.scale2_conv2(x, training)
 
-        x = self.stage4_upsampling(x, training)
+        x = self.scale2_upsampling(x, training)
         x = layers.concatenate([x, stage3_in])
-        x = self.stage3_conv5(x, training)
-        stage3_output = self.stage3_conv2(x, training)
-        return stage5_output, stage4_output, stage3_output
+        x = self.scale3_conv5(x, training)
+        scale3_output = self.scale3_conv2(x, training)
+
+        return scale1_output, scale2_output, scale3_output
+
 
     def get_variables(self, layer_idx, suffix=None):
         if suffix:
@@ -62,8 +67,10 @@ class Headnet(tf.keras.Model):
                 variables.append(v)
         return variables
 
+
     def _init_vars(self):
         import numpy as np
+        print('init vars')
         s3 = tf.constant(np.random.randn(1, 32, 32, 256).astype(np.float32))
         s4 = tf.constant(np.random.randn(1, 16, 16, 512).astype(np.float32))
         s5 = tf.constant(np.random.randn(1, 8, 8, 1024).astype(np.float32))
@@ -93,6 +100,7 @@ class _Conv5(tf.keras.Model):
 
 
     def call(self, input_tensor, training=False):
+        print('headnet', input_tensor.shape)
         x = self.conv1(input_tensor)
         x = self.bn1(x, training=training)
         x = tf.nn.leaky_relu(x, alpha=0.1)
@@ -159,12 +167,12 @@ if __name__ == '__main__':
     s5 = tf.constant(np.random.randn(1, 8, 8, 1024).astype(np.float32))
     
     # (1, 256, 256, 3) => (1, 8, 8, 1024)
-    headnet = Headnet()
-    f5, f4, f3 = headnet(s3, s4, s5)
-    print(f5.shape, f4.shape, f3.shape)
+    # headnet = Headnet()
+    # f5, f4, f3 = headnet(s3, s4, s5)
+    # print(f5.shape, f4.shape, f3.shape)
 
-    for v in headnet.variables:
-        print(v.name)
+    # for v in headnet.variables:
+    #     print(v.name)
 
 
 
