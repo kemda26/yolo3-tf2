@@ -100,7 +100,6 @@ class _Conv5(tf.keras.Model):
 
 
     def call(self, input_tensor, training=False):
-        print('headnet', input_tensor.shape)
         x = self.conv1(input_tensor)
         x = self.bn1(x, training=training)
         x = tf.nn.leaky_relu(x, alpha=0.1)

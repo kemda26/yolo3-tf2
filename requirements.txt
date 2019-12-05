@@ -5,3 +5,5 @@ tqdm
 sklearn
 imgaug==0.2.6
 matplotlib
+efficientnet
+tensorflow==2.0.0

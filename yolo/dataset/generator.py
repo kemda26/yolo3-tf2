@@ -6,7 +6,7 @@ import tensorflow as tf
 from yolo.dataset.augment import ImgAugment
 from yolo.utils.box import create_anchor_boxes
 from yolo.dataset.annotation import parse_annotation
-from yolo import COCO_ANCHORS
+# from yolo import COCO_ANCHORS
 
 from random import shuffle
 
@@ -22,7 +22,7 @@ class BatchGenerator(object):
                  img_dir,
                  labels,
                  batch_size,
-                 anchors=COCO_ANCHORS,   
+                 anchors=[23,121, 30,241, 40,174, 42,273, 53,316, 56,230, 66,303, 81,318, 104,337],   
                  min_net_size=320,
                  max_net_size=608,    
                  jitter=True,
