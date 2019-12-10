@@ -7,8 +7,6 @@ bleach==3.1.0
 cachetools==3.1.1
 certifi==2019.9.11
 chardet==3.0.4
-comet-git-pure==0.19.13
-comet-ml==2.0.18
 configobj==5.0.6
 coverage==4.5.4
 cycler==0.10.0
