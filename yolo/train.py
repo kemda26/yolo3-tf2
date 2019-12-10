@@ -1,37 +1,35 @@
 
 # import comet_ml as comet
 import tensorflow as tf
+tf.compat.v1.enable_eager_execution()
+from tensorflow.python.keras.optimizer_v2.adam import Adam
 import os
+import h5py
 from tqdm import tqdm
 
 from yolo.loss import loss_fn
+from .utils.utils import EarlyStopping
 
 
-def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, num_epoches=500, save_dir=None, weight_name='weights', ckpt_path='./tf_ckpts', checkpoint=False):
+def train_fn(model, 
+             train_generator, 
+             valid_generator=None, 
+             learning_rate=1e-4, 
+             num_epoches=500, 
+             save_dir=None, 
+             weight_name='weights'):
     
     save_file = _setup(save_dir=save_dir, weight_name=weight_name)
+    es = EarlyStopping(patience=10)
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
-    # experiment = comet.Experiment(project_name='yolo3', workspace='kemda26')
+    # optimizer = Adam(learning_rate=learning_rate) # adam_v2
 
-    epoch = tf.Variable(-1)
-    if checkpoint:
-        ckpt = tf.train.Checkpoint(epoch=epoch, optimizer=optimizer, model=model)
-        manager = tf.train.CheckpointManager(ckpt, ckpt_path, max_to_keep=1)
-        if manager.latest_checkpoint:
-            print("Restored from {}".format(manager.latest_checkpoint))
-            status = ckpt.restore(manager.latest_checkpoint)
-            # status.assert_consumed()
-        else:
-            print("\n    Initializing from scratch.")
-    else:
-        print("\n    Initializing from scratch.")
-
-    
+    epoch = -1
 
     history = []
-    for i in range(epoch.numpy() + 1, num_epoches):
+    for idx in range(epoch + 1, num_epoches):
         # 1. update params
-        train_loss = _loop_train(model, optimizer, train_generator, i, ckpt_path, checkpoint)
+        train_loss = _loop_train(model, optimizer, train_generator, idx)
         
         # 2. monitor validation loss
         if valid_generator:
@@ -39,20 +37,23 @@ def train_fn(model, train_generator, valid_generator=None, learning_rate=1e-4, n
             loss_value = valid_loss
         else:
             loss_value = train_loss
-        print("{}-th loss = {}, train_loss = {}".format(i, loss_value, train_loss))
+        print("{}-th loss = {}, train_loss = {}".format(idx, loss_value, train_loss))
 
         # 3. update weights
         history.append(loss_value)
         if save_file is not None and loss_value == min(history):
             print("    update weight with loss: {}".format(loss_value))
-            model.save_weights("{}.h5".format(save_file))
-            
-        # model.save_weights("{}.h5".format('last_weights'))
+            _save_weights(model, '{}.h5'.format(save_file))
+            # model.save_weights('{}'.format(save_file), save_format='h5')
+        
+        if es.step(loss_value):
+            print('early stopping')
+            return history
 
     return history
 
 
-def _loop_train(model, optimizer, generator, epoch, ckpt_path, checkpoint):
+def _loop_train(model, optimizer, generator, epoch):
     # one epoch
     
     n_steps = generator.steps_per_epoch
@@ -64,11 +65,6 @@ def _loop_train(model, optimizer, generator, epoch, ckpt_path, checkpoint):
         loss_value += loss
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
     loss_value /= generator.steps_per_epoch
-
-    if checkpoint:
-        ckpt = tf.train.Checkpoint(epoch=tf.Variable(epoch), optimizer=optimizer, model=model)
-        manager = tf.train.CheckpointManager(ckpt, ckpt_path, max_to_keep=1)
-        manager.save(epoch)
 
     return loss_value
 
@@ -103,6 +99,14 @@ def _setup(save_dir, weight_name='weights'):
     else:
         file_name = None
     return file_name
+
+
+def _save_weights(model, filename):
+    f = h5py.File(filename, 'w')
+    weights = model.get_weights()
+    for i in range(len(weights)):
+        f.create_dataset('weight' + str(i), data=weights[i])
+    f.close()
 
 
 if __name__ == '__main__':

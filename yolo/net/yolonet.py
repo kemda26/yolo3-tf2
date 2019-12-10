@@ -32,7 +32,7 @@ class Yolonet(tf.keras.Model):
         self.head = Headnet(n_classes)
 
         self.num_layers = 110
-        # self._init_vars()
+        self._init_vars()
 
 
     def load_darknet_params(self, weights_file, skip_detect_layer=False):
@@ -48,7 +48,7 @@ class Yolonet(tf.keras.Model):
 
     def call(self, input_tensor, training=False):
         s3, s4, s5 = self.body(input_tensor, training)
-        print('shape',s3.shape, s4.shape, s5.shape)
+        # print('shape',s3.shape, s4.shape, s5.shape)
         f5, f4, f3 = self.head(s3, s4, s5, training)
         return f5, f4, f3
 

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import argparse
 from yolo.train import train_fn
 from yolo.config import ConfigParser
