@@ -1,4 +1,5 @@
 import tensorflow as tf
+tf.enable_eager_execution()
 import json
 import os
 import glob

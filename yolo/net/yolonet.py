@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import tensorflow as tf
+tf.enable_eager_execution()
 import numpy as np
 import cv2
 
