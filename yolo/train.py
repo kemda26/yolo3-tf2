@@ -8,7 +8,7 @@ from datetime import datetime, date
 import time
 
 from yolo.loss import loss_fn
-from .utils.utils import EarlyStopping
+from .utils.utils import EarlyStopping, Logger
 
 
 def train_fn(model,
@@ -26,9 +26,13 @@ def train_fn(model,
     epoch = -1
     history = []
 
-    current_time = date.today().strftime('%d/%m/%Y-') + datetime.now().strftime('%H:%M:%S')
-    writer_1 = tf.contrib.summary.create_file_writer('logs/%s/valid_loss' % current_time, flush_millis=10000)
-    writer_2 = tf.contrib.summary.create_file_writer('logs/%s/train_loss' % current_time, flush_millis=10000)
+    current_time = date.today().strftime('%d-%m-%Y_') + datetime.now().strftime('%H:%M:%S')
+    logger = Logger('efficientnetb0', current_time)
+    logger.write()
+    print('---Logged Files')
+
+    writer_1 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/valid_loss' % current_time, flush_millis=10000)
+    writer_2 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/train_loss' % current_time, flush_millis=10000)
 
     for idx in range(epoch + 1, num_epoches):
         # 1. update params
@@ -54,7 +58,7 @@ def train_fn(model,
         
         if es.step(valid_loss):
             print('early stopping')
-            return history
+            break
         
     return history
 
