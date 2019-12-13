@@ -26,7 +26,7 @@ class Yolonet(tf.keras.Model):
         if arch == 'mobilenet':
             self.body = MobileNet(input_shape=(224,224,3))
         elif arch == 'effnetb0':
-            self.body = EfficientNet(pretrained=None)
+            self.body = EfficientNet(pretrained='imagenet')
         else:
             self.body = DarkNet()
 
