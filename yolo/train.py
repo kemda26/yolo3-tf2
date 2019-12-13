@@ -39,8 +39,8 @@ def train_fn(model,
         train_loss = _loop_train(model, optimizer, train_generator, idx)
         
         # 2. monitor validation loss
-        # with tf.name_scope('loss'):
         if valid_generator:
+            print('Validating...')
             val_loss = _loop_validation(model, valid_generator)
             valid_loss = val_loss
         else:
@@ -65,7 +65,6 @@ def train_fn(model,
 
 def _loop_train(model, optimizer, generator, epoch):
     # one epoch
-    
     n_steps = generator.steps_per_epoch
     loss_value = 0
     for _ in tqdm(range(n_steps)):
@@ -90,7 +89,7 @@ def _loop_validation(model, generator):
     # one epoch
     n_steps = generator.steps_per_epoch
     loss_value = 0
-    for _ in range(n_steps):
+    for _ in tqdm(range(n_steps)):
         xs, yolo_1, yolo_2, yolo_3 = generator.next_batch()
         ys = [yolo_1, yolo_2, yolo_3]
         ys_ = model(xs)
