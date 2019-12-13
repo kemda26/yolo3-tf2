@@ -6,7 +6,7 @@
         "net_size":             224
     },
     "pretrained" : {
-        "keras_format":         "weights/mobilenet/efficientnet.h5",
+        "keras_format":         "weights/efficientnet/efficientnet.h5",
         "darknet_format":       "yolov3.weights"
     },
     "train" : {
