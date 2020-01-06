@@ -10,6 +10,9 @@ import time
 from yolo.loss import loss_fn
 from .utils.utils import EarlyStopping, Logger
 
+global_step = tf.Variable(0, trainable=False)
+boundaries = [6000, 10000, 15000]
+learning_rates = [5e-5, 3e-5, 1e-5, 3e-6]
 
 def train_fn(model,
              train_generator, 
@@ -30,15 +33,7 @@ def train_fn(model,
     writer_1 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/valid_loss' % current_time, flush_millis=10000)
     writer_2 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/train_loss' % current_time, flush_millis=10000)
 
-    global_step = tf.Variable(0, trainable=False)
-    boundaries = [4170, 6205]
-    learning_rates = [5e-5, 1e-5, 3e-6]
     for epoch in range(1, num_epoches + 1):
-        # 0. learning rate scheduler
-        learning_rate_fn = tf.train.piecewise_constant(global_step, boundaries, learning_rates)
-        optimizer = tf.train.AdamOptimizer( learning_rate=learning_rate_fn() )
-        global_step.assign_add(1)
-
         # 1. update params
         train_loss = _loop_train(model, optimizer, train_generator, epoch)
 
@@ -73,6 +68,11 @@ def _loop_train(model, optimizer, generator, epoch):
     n_steps = generator.steps_per_epoch
     loss_value = 0
     for _ in tqdm(range(n_steps)):
+        # learning rate scheduler
+        learning_rate_fn = tf.train.piecewise_constant(global_step, boundaries, learning_rates)
+        optimizer = tf.train.AdamOptimizer( learning_rate=learning_rate_fn() )
+        global_step.assign_add(1)
+
         xs, yolo_1, yolo_2, yolo_3 = generator.next_batch()
         ys = [yolo_1, yolo_2, yolo_3]
         grads, loss = _grad_fn(model, xs, ys)

@@ -20,7 +20,7 @@ from yolo.net.effnet import EfficientNet
 
 # Yolo v3
 class Yolonet(tf.keras.Model):
-    def __init__(self, n_classes=10, arch='efficientnet-b0'):
+    def __init__(self, n_classes=10, arch='efficientnet-b2'):
         super(Yolonet, self).__init__(name='')
         
         print('using %s backbone' % arch)
