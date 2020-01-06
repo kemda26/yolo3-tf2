@@ -20,13 +20,14 @@ from yolo.net.effnet import EfficientNet
 
 # Yolo v3
 class Yolonet(tf.keras.Model):
-    def __init__(self, n_classes=10, arch='effnetb0'):
+    def __init__(self, n_classes=10, arch='efficientnet-b0'):
         super(Yolonet, self).__init__(name='')
         
+        print('using %s backbone' % arch)
         if arch == 'mobilenet':
             self.body = MobileNet(input_shape=(224,224,3))
-        elif arch == 'effnetb0':
-            self.body = EfficientNet(pretrained='imagenet')
+        elif 'efficientnet' in arch:
+            self.body = EfficientNet(arch, pretrained='imagenet')
         else:
             self.body = DarkNet()
 

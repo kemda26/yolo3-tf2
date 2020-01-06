@@ -17,27 +17,31 @@ def train_fn(model,
              learning_rate=1e-4, 
              num_epoches=500, 
              save_dir=None, 
-             weight_name='weights'):
+             weight_name='weights') -> 'train function':
     
     save_file = _setup(save_dir=save_dir, weight_name=weight_name)
     es = EarlyStopping(patience=10)
-    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-
-    epoch = -1
     history = []
-
     current_time = date.today().strftime('%d-%m-%Y_') + datetime.now().strftime('%H:%M:%S')
-    logger = Logger('efficientnetb0', current_time)
-    logger.write()
+
+    logger = Logger('efficientnetb2', current_time)
     print('---Logged Files')
 
     writer_1 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/valid_loss' % current_time, flush_millis=10000)
     writer_2 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/train_loss' % current_time, flush_millis=10000)
 
-    for idx in range(epoch + 1, num_epoches):
+    global_step = tf.Variable(0, trainable=False)
+    boundaries = [4170, 6205]
+    learning_rates = [5e-5, 1e-5, 3e-6]
+    for epoch in range(1, num_epoches + 1):
+        # 0. learning rate scheduler
+        learning_rate_fn = tf.train.piecewise_constant(global_step, boundaries, learning_rates)
+        optimizer = tf.train.AdamOptimizer( learning_rate=learning_rate_fn() )
+        global_step.assign_add(1)
+
         # 1. update params
-        train_loss = _loop_train(model, optimizer, train_generator, idx)
-        
+        train_loss = _loop_train(model, optimizer, train_generator, epoch)
+
         # 2. monitor validation loss
         if valid_generator:
             print('Validating...')
@@ -46,8 +50,9 @@ def train_fn(model,
         else:
             valid_loss = train_loss
 
-        tensorboard_logger(writer_1, writer_2, train_loss, valid_loss, idx)
-        print("{}-th loss = {}, train_loss = {}".format(idx, valid_loss, train_loss))
+        tensorboard_logger(writer_1, writer_2, train_loss, valid_loss, epoch)
+        print("{}-th loss = {}, train_loss = {}".format(epoch, valid_loss, train_loss))
+        logger.write({ 'valid_loss': valid_loss, 'train_loss': train_loss })
 
         # 3. update weights
         history.append(valid_loss)
@@ -59,7 +64,7 @@ def train_fn(model,
         if es.step(valid_loss):
             print('early stopping')
             break
-        
+
     return history
 
 
@@ -77,7 +82,7 @@ def _loop_train(model, optimizer, generator, epoch):
     return loss_value
 
 
-def _grad_fn(model, images_tensor, list_y_trues):
+def _grad_fn(model, images_tensor, list_y_trues) -> 'compute gradient & loss':
     with tf.GradientTape() as tape:
         logits = model(images_tensor)
         loss = loss_fn(list_y_trues, logits)

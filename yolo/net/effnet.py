@@ -1,15 +1,21 @@
-from efficientnet.tfkeras import EfficientNetB0
+from efficientnet.tfkeras import EfficientNetB0, EfficientNetB2
 import tensorflow as tf
 import numpy as np
 
 class EfficientNet(tf.keras.Model):
-    def __init__(self, input_shape=(224, 224, 3), pretrained=None):
+    def __init__(self, arch, input_shape, pretrained=None):
         super(EfficientNet, self).__init__()
 
-        self.net = EfficientNetB0(include_top=False, 
-                                  weights=pretrained,
-                                  input_shape=input_shape,
-                                  classes=10)
+        if arch == 'efficientnet-b0':
+            self.net = EfficientNetB0(include_top=False, 
+                                    weights=pretrained,
+                                    input_shape=input_shape,
+                                    classes=10)
+        elif arch == 'efficientnet-b2':
+            self.net = EfficientNetB2(include_top=False, 
+                                    weights=pretrained,
+                                    input_shape=input_shape,
+                                    classes=10)
         
         self.feature_3 = self.net.get_layer('block4a_expand_activation').output
         self.feature_2 = self.net.get_layer('block6a_expand_activation').output
@@ -20,7 +26,7 @@ class EfficientNet(tf.keras.Model):
                                                         self.feature_2,
                                                         self.feature_1])
 
-        # print(self.net.summary())
+        print(self.net.summary())
 
 
     def call(self, tensor, training=False):
@@ -29,9 +35,10 @@ class EfficientNet(tf.keras.Model):
 
 
 if __name__ == '__main__':
-    inputs = tf.constant(np.random.randn(6, 224, 224, 3).astype(np.float32))
+    input_shape = (260, 260, 3)
+    inputs = tf.constant(np.random.randn(1, *input_shape).astype(np.float32))
 
-    net = EfficientNet()
+    net = EfficientNet('efficientnet-b2', input_shape=input_shape)
     f3,f2,f1 = net(inputs)
     print(f3.shape)
     print(f2.shape)

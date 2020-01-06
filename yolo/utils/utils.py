@@ -118,11 +118,11 @@ class Logger(object):
         path = os.path.join(path, 'log.csv')
 
         self.write_header = True
-        self.log_entry = {}
+        # self.log_entry = {}
         self.f = open(path, 'w')
         self.writer = None  # DictWriter created with first call to write() method
 
-    def write(self, display=True):
+    def write(self, input, display=True) -> 'input is a dictionary':
         """ Write 1 log entry to file, and optionally to stdout
         Log fields preceded by '_' will not be printed to stdout
 
@@ -130,14 +130,14 @@ class Logger(object):
             display: boolean, print to stdout
         """
         if display:
-            self.disp(self.log_entry)
+            self.disp(input)
         if self.write_header:
-            fieldnames = [x for x in self.log_entry.keys()]
+            fieldnames = [x for x in input.keys()]
             self.writer = csv.DictWriter(self.f, fieldnames=fieldnames)
             self.writer.writeheader()
             self.write_header = False
-        self.writer.writerow(self.log_entry)
-        self.log_entry = {}
+        self.writer.writerow(input)
+        # self.log_entry = {}
 
     @staticmethod
     def disp(log):

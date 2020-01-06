@@ -1,17 +1,17 @@
 {
     "model" : {
-        "arch":                 "effnetb0",
+        "arch":                 "efficientnet-b2",
         "anchors":              [23,121, 30,241, 40,174, 42,273, 53,316, 56,230, 66,303, 81,318, 104,337],
         "labels":               ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
-        "net_size":             224
+        "net_size":             260
     },
     "pretrained" : {
-        "keras_format":         "weights/efficientnet/efficientnet.h5",
+        "keras_format":         "weights/efficientnet-b2/efficientnet-b2.h5",
         "darknet_format":       "yolov3.weights"
     },
     "train" : {
-        "min_size":             224,
-        "max_size":             224,
+        "min_size":             260,
+        "max_size":             260,
         "num_epoch":            40,
         "train_image_folder":   "datasets/train/",
         "train_annot_folder":   "datasets/annotation/train/",
@@ -21,8 +21,8 @@
         "test_annot_folder":    "datasets/annotation/test/",
         "batch_size":           64,
         "learning_rate":        3e-5,
-        "save_folder":          "weights/efficientnet",
-        "weight_name":          "efficientnet",
+        "save_folder":          "weights/efficientnet-b2",
+        "weight_name":          "efficientnet-b2",
         "checkpoint_path":      "./tf_ckpts",
         "jitter":               false
     }
