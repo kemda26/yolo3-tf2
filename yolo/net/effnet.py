@@ -26,7 +26,7 @@ class EfficientNet(tf.keras.Model):
                                                         self.feature_2,
                                                         self.feature_1])
 
-        print(self.net.summary())
+        # print(self.net.summary())
 
 
     def call(self, tensor, training=False):
