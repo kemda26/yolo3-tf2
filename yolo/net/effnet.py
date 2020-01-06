@@ -3,18 +3,18 @@ import tensorflow as tf
 import numpy as np
 
 class EfficientNet(tf.keras.Model):
-    def __init__(self, arch, input_shape, pretrained=None):
+    def __init__(self, arch, pretrained=None):
         super(EfficientNet, self).__init__()
 
         if arch == 'efficientnet-b0':
             self.net = EfficientNetB0(include_top=False, 
                                     weights=pretrained,
-                                    input_shape=input_shape,
+                                    input_shape=(224, 224, 3),
                                     classes=10)
         elif arch == 'efficientnet-b2':
             self.net = EfficientNetB2(include_top=False, 
                                     weights=pretrained,
-                                    input_shape=input_shape,
+                                    input_shape=(260, 260, 3),
                                     classes=10)
         
         self.feature_3 = self.net.get_layer('block4a_expand_activation').output
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     input_shape = (260, 260, 3)
     inputs = tf.constant(np.random.randn(1, *input_shape).astype(np.float32))
 
-    net = EfficientNet('efficientnet-b2', input_shape=input_shape)
+    net = EfficientNet('efficientnet-b2')
     f3,f2,f1 = net(inputs)
     print(f3.shape)
     print(f2.shape)
