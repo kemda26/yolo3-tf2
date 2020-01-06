@@ -31,8 +31,10 @@ class BatchGenerator(object):
         self.ann_fnames = ann_fnames
         self.img_dir = img_dir
         self.lable_names = labels
-        self.min_net_size       = (min_net_size//DOWNSAMPLE_RATIO)*DOWNSAMPLE_RATIO
-        self.max_net_size       = (max_net_size//DOWNSAMPLE_RATIO)*DOWNSAMPLE_RATIO
+        # self.min_net_size       = (min_net_size//DOWNSAMPLE_RATIO)*DOWNSAMPLE_RATIO
+        # self.max_net_size       = (max_net_size//DOWNSAMPLE_RATIO)*DOWNSAMPLE_RATIO
+        self.min_net_size = min_net_size
+        self.max_net_size = max_net_size
         self.jitter             = jitter
         self.anchors            = create_anchor_boxes(anchors)
         self.batch_size = batch_size
@@ -46,14 +48,15 @@ class BatchGenerator(object):
         self._initial_net_size()
 
     def _initial_net_size(self):
-        self._net_size = DOWNSAMPLE_RATIO * ((self.min_net_size/DOWNSAMPLE_RATIO + self.max_net_size/DOWNSAMPLE_RATIO) // 2)
-        self._net_size = int(self._net_size)
+        # self._net_size = DOWNSAMPLE_RATIO * ((self.min_net_size/DOWNSAMPLE_RATIO + self.max_net_size/DOWNSAMPLE_RATIO) // 2)
+        self._net_size = self.max_net_size
         print("_initial_net_size")
         print(self.min_net_size, self.max_net_size, self._net_size)
 
     def _update_net_size(self):
-        self._net_size = DOWNSAMPLE_RATIO*np.random.randint(self.min_net_size/DOWNSAMPLE_RATIO, \
-                                                            self.max_net_size/DOWNSAMPLE_RATIO+1)
+        # self._net_size = DOWNSAMPLE_RATIO*np.random.randint(self.min_net_size/DOWNSAMPLE_RATIO, \
+        #                                                     self.max_net_size/DOWNSAMPLE_RATIO+1)
+        self._net_size = self.min_net_size
 
     def next_batch(self):
         if self._epoch >= 5:
@@ -107,7 +110,8 @@ class BatchGenerator(object):
 
 def _create_empty_xy(net_size, n_classes, n_boxes=3):
     # get image input size, change every 10 batches
-    base_grid_h, base_grid_w = net_size//DOWNSAMPLE_RATIO, net_size//DOWNSAMPLE_RATIO
+    # base_grid_h, base_grid_w = net_size//DOWNSAMPLE_RATIO, net_size//DOWNSAMPLE_RATIO
+    base_grid_h, base_grid_w = net_size, net_size
 
     # initialize the inputs and the outputs
     ys_1 = np.zeros((1*base_grid_h,  1*base_grid_w, n_boxes, 4+1+n_classes)) # desired network output 1

@@ -19,7 +19,7 @@
         "valid_annot_folder":   "",
         "test_image_folder":    "datasets/test/",
         "test_annot_folder":    "datasets/annotation/test/",
-        "batch_size":           64,
+        "batch_size":           32,
         "learning_rate":        3e-5,
         "save_folder":          "weights/efficientnet-b2",
         "weight_name":          "efficientnet-b2",
