@@ -39,7 +39,7 @@ def train_fn(model,
         global_step.assign_add(1)
 
         # 1. update params
-        train_loss = _loop_train(model, None, train_generator, epoch)
+        train_loss = _loop_train(model, optimizer, train_generator, epoch)
 
         # 2. monitor validation loss
         if valid_generator:
