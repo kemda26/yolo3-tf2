@@ -11,11 +11,11 @@ class EfficientNet(tf.keras.Model):
                                     weights=pretrained,
                                     input_shape=(224, 224, 3),
                                     classes=10)
-        elif arch == 'efficientnet-b2':
-            self.net = EfficientNetB2(include_top=False, 
-                                    weights=pretrained,
-                                    input_shape=(260, 260, 3),
-                                    classes=10)
+        # elif arch == 'efficientnet-b2':
+        #     self.net = EfficientNetB2(include_top=False, 
+        #                             weights=pretrained,
+        #                             input_shape=(260, 260, 3),
+        #                             classes=10)
         
         self.feature_3 = self.net.get_layer('block4a_expand_activation').output
         self.feature_2 = self.net.get_layer('block6a_expand_activation').output

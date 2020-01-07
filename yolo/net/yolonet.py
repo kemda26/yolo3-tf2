@@ -1,26 +1,26 @@
-# -*- coding: utf-8 -*-
-
 import tensorflow as tf
 tf.enable_eager_execution()
 import numpy as np
 import cv2
 
-from yolo.net.mobilenet import MobileNet
-from yolo.net.darknet import DarkNet
-from yolo.net.headnet import Headnet
-from yolo.net.weights import WeightReader
-from yolo.net.effnet import EfficientNet
+# from yolo.net.darknet import DarkNet
+# from yolo.net.headnet import Headnet
+# from yolo.net.weights import WeightReader
+# from yolo.net.mobilenet import MobileNet
+# from yolo.net.effnet import EfficientNet
+# from yolo.net.resnet import ResNet50
 
-# from mobilenet import MobileNet
-# from darknet import DarkNet
-# from headnet import Headnet
-# from weights import WeightReader
-# from effnet import EfficientNet
+from mobilenet import MobileNet
+from darknet import DarkNet
+from headnet import Headnet
+from weights import WeightReader
+from effnet import EfficientNet
+from resnet import ResNet50
 
 
 # Yolo v3
 class Yolonet(tf.keras.Model):
-    def __init__(self, n_classes=10, arch='efficientnet-b2'):
+    def __init__(self, n_classes=10, arch='resnet50'):
         super(Yolonet, self).__init__(name='')
         
         print('using %s backbone' % arch)
@@ -28,6 +28,8 @@ class Yolonet(tf.keras.Model):
             self.body = MobileNet(input_shape=(224,224,3))
         elif 'efficientnet' in arch:
             self.body = EfficientNet(arch, pretrained='imagenet')
+        elif arch == 'resnet50':
+            self.body = ResNet50(input_shape=(224,224,3))
         else:
             self.body = DarkNet()
 
