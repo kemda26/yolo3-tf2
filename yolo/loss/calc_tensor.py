@@ -10,7 +10,7 @@ def sum_loss(losses):
     return tf.sqrt(tf.reduce_sum(losses))
 
 def loss_fn(list_y_trues, list_y_preds,
-            anchors=[17,18, 28,24, 36,34, 42,44, 56,51, 72,66, 90,95, 92,154, 139,281],
+            anchors=[23,121, 30,241, 40,174, 42,273, 53,316, 56,230, 66,303, 81,318, 104,337],
             image_size=[288, 288], 
             ignore_thresh=0.5, 
             grid_scale=1,
@@ -49,7 +49,7 @@ class LossTensorCalculator(object):
         self.class_scale    = class_scale        
         self.image_size = image_size        # (h, w)-ordered
 
-    def run(self, y_true, y_pred, anchors=[90, 95, 92, 154, 139, 281]):
+    def run(self, y_true, y_pred, anchors=[66,303, 81,318, 104,337]):
         # 1. setup
         y_pred = tf.reshape(y_pred, y_true.shape)
         object_mask = tf.expand_dims(y_true[..., 4], 4)

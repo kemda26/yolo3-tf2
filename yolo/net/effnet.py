@@ -6,11 +6,11 @@ class EfficientNet(tf.keras.Model):
     def __init__(self, arch, pretrained=None):
         super(EfficientNet, self).__init__()
 
-        if arch == 'efficientnet-b0':
-            self.net = EfficientNetB0(include_top=False, 
-                                    weights=pretrained,
-                                    input_shape=(224, 224, 3),
-                                    classes=10)
+        
+        self.net = EfficientNetB0(include_top=False, 
+                                weights=pretrained,
+                                input_shape=(224, 224, 3),
+                                classes=10)
         # elif arch == 'efficientnet-b2':
         #     self.net = EfficientNetB2(include_top=False, 
         #                             weights=pretrained,

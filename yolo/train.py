@@ -27,7 +27,7 @@ def train_fn(model,
     history = []
     current_time = date.today().strftime('%d-%m-%Y_') + datetime.now().strftime('%H:%M:%S')
 
-    logger = Logger('efficientnetb2', current_time)
+    logger = Logger('resnet50', current_time)
     print('---Logged Files')
 
     writer_1 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/valid_loss' % current_time, flush_millis=10000)
@@ -73,19 +73,19 @@ def _loop_train(model, optimizer, generator, epoch):
         optimizer = tf.train.AdamOptimizer( learning_rate=learning_rate_fn() )
         global_step.assign_add(1)
 
-        xs, yolo_1, yolo_2, yolo_3 = generator.next_batch()
-        ys = [yolo_1, yolo_2, yolo_3]
-        grads, loss = _grad_fn(model, xs, ys)
+        x, yolo_1, yolo_2, yolo_3 = generator.next_batch()
+        y_true = [yolo_1, yolo_2, yolo_3]
+        grads, loss = _grad_fn(model, x, y_true)
         loss_value += loss
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
     loss_value /= generator.steps_per_epoch
     return loss_value
 
 
-def _grad_fn(model, images_tensor, list_y_trues) -> 'compute gradient & loss':
+def _grad_fn(model, images_tensor, list_y_true) -> 'compute gradient & loss':
     with tf.GradientTape() as tape:
         logits = model(images_tensor)
-        loss = loss_fn(list_y_trues, logits)
+        loss = loss_fn(list_y_true, logits)
     grads = tape.gradient(loss, model.trainable_variables)
     return grads , loss
 
@@ -95,10 +95,10 @@ def _loop_validation(model, generator):
     n_steps = generator.steps_per_epoch
     loss_value = 0
     for _ in tqdm(range(n_steps)):
-        xs, yolo_1, yolo_2, yolo_3 = generator.next_batch()
-        ys = [yolo_1, yolo_2, yolo_3]
-        ys_ = model(xs)
-        loss_value += loss_fn(ys, ys_)
+        x, yolo_1, yolo_2, yolo_3 = generator.next_batch()
+        y_true = [yolo_1, yolo_2, yolo_3]
+        y_pred = model(x)
+        loss_value += loss_fn(y_true, y_pred)
     loss_value /= generator.steps_per_epoch
     return loss_value
 
