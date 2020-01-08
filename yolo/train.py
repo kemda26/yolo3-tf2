@@ -9,6 +9,7 @@ import time
 
 from yolo.loss import loss_fn
 from .utils.utils import EarlyStopping, Logger
+from yolo.optimizer import AdamWeightDecayOptimizer
 
 def train_fn(model,
              train_generator, 
@@ -35,7 +36,9 @@ def train_fn(model,
     for epoch in range(1, num_epoches + 1):
         # learning rate scheduler
         learning_rate_fn = tf.train.piecewise_constant(global_step, boundaries, values)
-        optimizer = tf.train.AdamOptimizer( learning_rate=learning_rate_fn() )
+        optimizer = AdamWeightDecayOptimizer(learning_rate=learning_rate_fn(),
+                                             weight_decay_rate=0.01)
+        # optimizer = tf.train.AdamOptimizer( learning_rate=learning_rate_fn() )
         global_step.assign_add(1)
 
         # 1. update params

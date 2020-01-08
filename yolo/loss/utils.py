@@ -86,10 +86,9 @@ def loss_conf_tensor(object_mask, pred_box_conf, true_box_conf, obj_scale, noobj
 
 def loss_class_tensor(object_mask, pred_box_class, true_box_class, class_scale):
     true_box_class_ = tf.cast(true_box_class, tf.int64)
-    class_delta = object_mask * \
-                  tf.expand_dims(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=true_box_class_, logits=pred_box_class), 4) * \
-                  class_scale
-    loss_class = tf.reduce_sum(class_delta,               list(range(1,5)))
+    tmp = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=true_box_class_, logits=pred_box_class)
+    class_delta = object_mask * tf.expand_dims(tmp, 4) * class_scale
+    loss_class = tf.reduce_sum(class_delta, list(range(1,5)))
     return loss_class
 
 
