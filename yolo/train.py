@@ -11,13 +11,15 @@ from yolo.loss import loss_fn
 from .utils.utils import EarlyStopping, Logger
 from yolo.optimizer import AdamWeightDecayOptimizer
 
+
 def train_fn(model,
              train_generator, 
              valid_generator=None, 
              learning_rate=1e-4, 
              num_epoches=500, 
              save_dir=None, 
-             weight_name='weights') -> 'train function':
+             weight_name='weights',
+             num_warmups=2) -> 'train function':
     
     save_file = _setup(save_dir=save_dir, weight_name=weight_name)
     es = EarlyStopping(patience=10)
@@ -31,18 +33,30 @@ def train_fn(model,
     writer_2 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/train_loss' % current_time, flush_millis=10000)
 
     global_step = tf.Variable(0, trainable=False)
-    boundaries = [7, 15, 30]
-    values = [1e-4, 5e-5, 1e-5, 5e-6]
+    learning_rate = 1e-4
+    # boundaries = [10, 15, 30]
+    # values = [1e-4, 5e-5, 1e-5, 5e-6]
+    optimizer = None
+    warm_up_step = 1
     for epoch in range(1, num_epoches + 1):
-        # learning rate scheduler
-        learning_rate_fn = tf.train.piecewise_constant(global_step, boundaries, values)
-        optimizer = AdamWeightDecayOptimizer(learning_rate=learning_rate_fn(),
-                                             weight_decay_rate=0.005)
-        # optimizer = tf.train.AdamOptimizer( learning_rate=learning_rate_fn() )
-        global_step.assign_add(1)
+        warm_up = True if epoch <= num_warmups else False
+        if not warm_up:
+            # learning rate scheduler
+            # learning_rate_fn = tf.train.piecewise_constant(global_step, boundaries, values)
+            learning_rate_fn = tf.train.exponential_decay(learning_rate=learning_rate, 
+                                                        global_step=global_step,
+                                                        decay_steps=5,
+                                                        decay_rate=0.8,
+                                                        staircase=True)
+            optimizer = AdamWeightDecayOptimizer(learning_rate=learning_rate_fn(),
+                                                weight_decay_rate=0.005)
+            # optimizer = tf.train.AdamOptimizer( learning_rate=learning_rate_fn() )
+            global_step.assign_add(1)
+        else:
+            print('warm up...')
 
         # 1. update params
-        train_loss = _loop_train(model, optimizer, train_generator, epoch)
+        train_loss = _loop_train(model, optimizer, train_generator, epoch, learning_rate, warm_up, warm_up_step)
 
         # 2. monitor validation loss
         if valid_generator:
@@ -54,7 +68,7 @@ def train_fn(model,
 
         tensorboard_logger(writer_1, writer_2, train_loss, valid_loss, epoch)
         print("{}-th loss = {}, train_loss = {}".format(epoch, valid_loss, train_loss))
-        logger.write({ 'valid_loss': valid_loss, 'train_loss': train_loss })
+        logger.write({ 'valid_loss': valid_loss.numpy(), 'train_loss': train_loss.numpy() })
 
         # 3. update weights
         history.append(valid_loss)
@@ -70,7 +84,7 @@ def train_fn(model,
     return history
 
 
-def _loop_train(model, optimizer, generator, epoch):
+def _loop_train(model, optimizer, generator, epoch, learning_rate, warm_up, warm_up_step):
     # one epoch
     n_steps = generator.steps_per_epoch
     loss_value = 0
@@ -79,7 +93,14 @@ def _loop_train(model, optimizer, generator, epoch):
         y_true = [yolo_1, yolo_2, yolo_3]
         grads, loss = _grad_fn(model, x, y_true)
         loss_value += loss
-        optimizer.apply_gradients(zip(grads, model.trainable_variables))
+        if warm_up:
+            warm_up_learning_rate = (warm_up_step / (n_steps * epoch)) * learning_rate
+            warm_up_step += 1
+            optimizer = AdamWeightDecayOptimizer(learning_rate=warm_up_learning_rate,
+                                                 weight_decay_rate=0.008)
+            optimizer.apply_gradients(zip( grads, model.trainable_variables ))
+        else:
+            optimizer.apply_gradients(zip(grads, model.trainable_variables))
     loss_value /= generator.steps_per_epoch
     return loss_value
 
