@@ -31,13 +31,13 @@ def train_fn(model,
     writer_2 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/train_loss' % current_time, flush_millis=10000)
 
     global_step = tf.Variable(0, trainable=False)
-    boundaries = [5, 15, 30]
-    values = [5e-5, 3e-5, 1e-5, 5e-6]
+    boundaries = [7, 15, 30]
+    values = [1e-4, 5e-5, 1e-5, 5e-6]
     for epoch in range(1, num_epoches + 1):
         # learning rate scheduler
         learning_rate_fn = tf.train.piecewise_constant(global_step, boundaries, values)
         optimizer = AdamWeightDecayOptimizer(learning_rate=learning_rate_fn(),
-                                             weight_decay_rate=0.0001)
+                                             weight_decay_rate=0.005)
         # optimizer = tf.train.AdamOptimizer( learning_rate=learning_rate_fn() )
         global_step.assign_add(1)
 
