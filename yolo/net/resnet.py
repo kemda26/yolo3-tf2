@@ -5,10 +5,10 @@ class ResNet50(tf.keras.Model):
         super(ResNet50, self).__init__()
 
         self.net = tf.keras.applications.resnet50.ResNet50(input_shape=input_shape,
-                                                                  include_top=False,
-                                                                  weights='imagenet',
-                                                                  classes=10,
-                                                                  pooling=None)
+                                                            include_top=False,
+                                                            weights='imagenet',
+                                                            classes=10,
+                                                            pooling=None)
                                                                     
         self.feature_3 = self.net.get_layer('activation_21').output
         self.feature_2 = self.net.get_layer('activation_39').output

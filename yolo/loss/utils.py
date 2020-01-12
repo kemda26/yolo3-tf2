@@ -72,9 +72,10 @@ def wh_scale_tensor(true_box_wh, anchors, image_size) -> 'width and height scali
     return wh_scale
 
 def loss_coord_tensor(object_mask, pred_box, true_box, wh_scale, xywh_scale) -> 'calculate coordinate loss':
-    xy_delta    = object_mask * (pred_box - true_box) * wh_scale * xywh_scale
-    # print('coord ', xy_delta.shape) # (batch size, 7/14/28, 7/14/28, 3, 4)
-    loss_xy     = tf.reduce_sum(tf.square(xy_delta), list(range(1,5)))
+    # (batch size, 7/14/28, 7/14/28, 3, 4) x,y,w,h
+    # print('coord ', xy_delta.shape) 
+    xy_delta = object_mask * (pred_box - true_box) * wh_scale * xywh_scale
+    loss_xy  = tf.reduce_sum(tf.square(xy_delta), list(range(1,5)))
     return loss_xy
     
 def loss_conf_tensor(object_mask, pred_box_conf, true_box_conf, obj_scale, noobj_scale, conf_delta) -> 'calculate confidence loss':

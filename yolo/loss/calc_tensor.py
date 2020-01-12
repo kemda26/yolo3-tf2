@@ -15,7 +15,7 @@ def loss_fn(list_y_trues, list_y_preds,
             ignore_thresh=0.5, 
             grid_scale=1,
             obj_scale=5,
-            noobj_scale=1,
+            noobj_scale=100,
             xywh_scale=1,
             class_scale=1):
     
@@ -40,11 +40,11 @@ def loss_fn(list_y_trues, list_y_preds,
 
 class LossTensorCalculator(object):
     def __init__(self,
-                 image_size=[288, 288], 
+                 image_size=[288, 288],
                  ignore_thresh=0.5, 
                  grid_scale=1,
                  obj_scale=5,
-                 noobj_scale=1,
+                 noobj_scale=0.5,
                  xywh_scale=1,
                  class_scale=1):
         self.ignore_thresh  = ignore_thresh
@@ -58,7 +58,9 @@ class LossTensorCalculator(object):
     def run(self, y_true, y_pred, anchors=[66,303, 81,318, 104,337]):
         # 1. setup
         y_pred = tf.reshape(y_pred, y_true.shape)
+        # print(y_true.shape)
         object_mask = tf.expand_dims(y_true[..., 4], 4)
+        # print(object_mask.shape)
 
         # 2. Adjust prediction (bxy, twh)
         preds = adjust_pred_tensor(y_pred)
