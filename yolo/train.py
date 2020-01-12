@@ -68,23 +68,25 @@ def train_fn(model,
             valid_loss = train_loss # if no validation loss, use training loss as validation loss instead
             valid_loss_box, valid_loss_conf, valid_loss_class = train_loss_box, train_loss_conf, train_loss_class
 
-        tensorboard_logger(writer_1, writer_2, train_loss, valid_loss, epoch)
-        print("{}-th epoch --> train_loss = {}, valid_loss = {}".format(epoch, train_loss, valid_loss))
+        tensorboard_logger(writer_1, writer_2, train_loss, train_loss_box, train_loss_conf, train_loss_class, valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class, epoch)
+        print('{}-th'.format(epoch))
+        print('--> train_loss = {:.4f}, train_loss_box = {:.4f}, train_loss_conf = {:.4f}, train_loss_class = {:.4f}'.format(train_loss, train_loss_box, train_loss_conf, train_loss_class))
+        print('--> valid_loss = {:.4f}, valid_loss_box = {:.4f}, valid_loss_conf = {:.4f}, valid_loss_class = {:.4f}'.format(valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class))
         logger.write({ 
             'train_loss': train_loss.numpy(),
             'train_box': train_loss_box.numpy(),
-            'train_conf': train_loss_conf.numpy()
-            'train_class': train_loss_class.numpy()
+            'train_conf': train_loss_conf.numpy(),
+            'train_class': train_loss_class.numpy(),
             'valid_loss': valid_loss.numpy(),
             'valid_box': valid_loss_box.numpy(),
             'valid_conf': valid_loss_conf.numpy(),
             'valid_class': valid_loss_class.numpy(),
-        })
+        }, display=False)
 
         # 3. update weights
-        history.append(valid_loss)
+        history.append(round(valid_loss.numpy(), 4))
         if save_file is not None and valid_loss == min(history):
-            print("    update weight with loss: {}".format(valid_loss))
+            print("    update weight with loss: {:4f}".format(round(valid_loss.numpy(), 4)))
             _save_weights(model, '{}.h5'.format(save_file))
             # model.save_weights('{}'.format(save_file), save_format='h5')
         
@@ -173,7 +175,7 @@ def _save_weights(model, filename):
     f.close()
 
 
-def tensorboard_logger(writer_1, writer_2, train_loss, valid_loss, idx):
+def tensorboard_logger(writer_1, writer_2, train_loss, train_loss_box, train_loss_conf, train_loss_class, valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class, idx):
 
     with writer_1.as_default(), tf.contrib.summary.always_record_summaries():
         tf.contrib.summary.scalar('loss', valid_loss, step=idx)
