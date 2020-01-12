@@ -85,7 +85,7 @@ def train_fn(model,
 
         # 3. update weights
         history.append(round(valid_loss.numpy(), 4))
-        if save_file is not None and valid_loss == min(history):
+        if save_file is not None and round(valid_loss.numpy(), 4) == min(history):
             print("    update weight with loss: {:4f}".format(round(valid_loss.numpy(), 4)))
             _save_weights(model, '{}.h5'.format(save_file))
             # model.save_weights('{}'.format(save_file), save_format='h5')
