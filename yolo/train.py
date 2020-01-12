@@ -19,7 +19,7 @@ def train_fn(model,
              num_epoches=500, 
              save_dir=None, 
              weight_name='weights',
-             num_warmups=0) -> 'train function':
+             num_warmups=5) -> 'train function':
     
     save_file = _setup(save_dir=save_dir, weight_name=weight_name)
     es = EarlyStopping(patience=10)
@@ -45,7 +45,7 @@ def train_fn(model,
             # learning_rate_fn = tf.train.piecewise_constant(global_step, boundaries, values)
             learning_rate_fn = tf.train.exponential_decay(learning_rate=learning_rate, 
                                                         global_step=global_step,
-                                                        decay_steps=5,
+                                                        decay_steps=10,
                                                         decay_rate=0.8,
                                                         staircase=False)
             # optimizer = AdamWeightDecayOptimizer(learning_rate=learning_rate_fn(),

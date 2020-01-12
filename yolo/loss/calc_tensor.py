@@ -35,7 +35,7 @@ def loss_fn(list_y_trues, list_y_preds,
     loss_conf = [loss[1] for loss in list_3_losses]
     loss_class = [loss[2] for loss in list_3_losses]
 
-    return sum_loss([loss_yolo_1, loss_yolo_2, loss_yolo_3]), sum_loss(loss_box), sum_loss(loss_conf), sum_loss(loss_class)
+    return sum_loss([loss_yolo_1, loss_yolo_2, loss_yolo_3]), sum_loss(loss_box), sum_loss(loss_conf), tf.redude_sum(loss_class)
 
 
 class LossTensorCalculator(object):
