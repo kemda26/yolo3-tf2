@@ -26,10 +26,16 @@ def loss_fn(list_y_trues, list_y_preds,
                                         noobj_scale=noobj_scale,
                                         xywh_scale=xywh_scale,
                                         class_scale=class_scale)
-    loss_yolo_1 = calculator.run(list_y_trues[0], list_y_preds[0], anchors=anchors[12:])
-    loss_yolo_2 = calculator.run(list_y_trues[1], list_y_preds[1], anchors=anchors[6:12])
-    loss_yolo_3 = calculator.run(list_y_trues[2], list_y_preds[2], anchors=anchors[:6])
-    return sum_loss([loss_yolo_1, loss_yolo_2, loss_yolo_3])
+    loss_yolo_1, list_loss_1 = calculator.run(list_y_trues[0], list_y_preds[0], anchors=anchors[12:]) # y_true (1, 7, 7, 3, 15)
+    loss_yolo_2, list_loss_2 = calculator.run(list_y_trues[1], list_y_preds[1], anchors=anchors[6:12]) # y_true (1, 14, 14, 3, 15)
+    loss_yolo_3, list_loss_3 = calculator.run(list_y_trues[2], list_y_preds[2], anchors=anchors[:6]) # y_true (1, 28, 28, 3, 15)
+
+    list_3_losses = [ list_loss_1, list_loss_2, list_loss_3 ]
+    loss_box = [loss[0] for loss in list_3_losses]
+    loss_conf = [loss[1] for loss in list_3_losses]
+    loss_class = [loss[2] for loss in list_3_losses]
+
+    return sum_loss([loss_yolo_1, loss_yolo_2, loss_yolo_3]), sum_loss(loss_box), sum_loss(loss_conf), sum_loss(loss_class)
 
 
 class LossTensorCalculator(object):
@@ -47,7 +53,7 @@ class LossTensorCalculator(object):
         self.noobj_scale    = noobj_scale
         self.xywh_scale     = xywh_scale
         self.class_scale    = class_scale        
-        self.image_size = image_size        # (h, w)-ordered
+        self.image_size     = image_size        # (h, w)-ordered
 
     def run(self, y_true, y_pred, anchors=[66,303, 81,318, 104,337]):
         # 1. setup
@@ -70,7 +76,8 @@ class LossTensorCalculator(object):
         loss_conf = loss_conf_tensor(object_mask, preds[..., 4], trues[..., 4], self.obj_scale, self.noobj_scale, conf_delta)
         loss_class = loss_class_tensor(object_mask, preds[..., 5:], trues[..., 5], self.class_scale)
         loss = loss_box + loss_conf + loss_class
-        return loss*self.grid_scale
+        return loss * self.grid_scale, [loss_box * self.grid_scale, loss_conf * self.grid_scale, loss_class * self.grid_scale]
+
 
 if __name__ == '__main__':
     import os
@@ -81,7 +88,7 @@ if __name__ == '__main__':
 
         calculator = LossTensorCalculator()
         loss_tensor = calculator.run(tf.constant(yolo_1), pred_yolo_1)
-        loss_value =loss_tensor.numpy()[0]
+        loss_value = loss_tensor.numpy()[0]
         
         if np.allclose(loss_value, 63.16674):
             print("Test Passed")

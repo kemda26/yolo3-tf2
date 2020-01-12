@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 import tensorflow as tf
 
@@ -62,8 +61,7 @@ def conf_delta_tensor(y_true, y_pred, anchors, ignore_thresh):
     conf_delta = pred_box_conf * tf.cast(best_ious < ignore_thresh, tf.float32)
     return conf_delta
 
-def wh_scale_tensor(true_box_wh, anchors, image_size):
-    
+def wh_scale_tensor(true_box_wh, anchors, image_size) -> 'width and height scaling':
     image_size_  = tf.reshape(tf.cast(image_size, tf.float32), [1,1,1,1,2])
     anchors_ = tf.constant(anchors, dtype='float', shape=[1,1,1,3,2])
     
@@ -73,21 +71,24 @@ def wh_scale_tensor(true_box_wh, anchors, image_size):
     wh_scale = tf.expand_dims(2 - wh_scale[..., 0] * wh_scale[..., 1], axis=4) 
     return wh_scale
 
-def loss_coord_tensor(object_mask, pred_box, true_box, wh_scale, xywh_scale):
-    xy_delta    = object_mask   * (pred_box-true_box) * wh_scale * xywh_scale
-    loss_xy    = tf.reduce_sum(tf.square(xy_delta),       list(range(1,5)))
+def loss_coord_tensor(object_mask, pred_box, true_box, wh_scale, xywh_scale) -> 'calculate coordinate loss':
+    xy_delta    = object_mask * (pred_box - true_box) * wh_scale * xywh_scale
+    # print('coord ', xy_delta.shape) # (batch size, 7/14/28, 7/14/28, 3, 4)
+    loss_xy     = tf.reduce_sum(tf.square(xy_delta), list(range(1,5)))
     return loss_xy
     
-def loss_conf_tensor(object_mask, pred_box_conf, true_box_conf, obj_scale, noobj_scale, conf_delta):
+def loss_conf_tensor(object_mask, pred_box_conf, true_box_conf, obj_scale, noobj_scale, conf_delta) -> 'calculate confidence loss':
     object_mask_ = tf.squeeze(object_mask, axis=-1)
-    conf_delta  = object_mask_ * (pred_box_conf-true_box_conf) * obj_scale + (1-object_mask_) * conf_delta * noobj_scale
-    loss_conf  = tf.reduce_sum(tf.square(conf_delta),     list(range(1,4)))
+    conf_delta   = object_mask_ * (pred_box_conf - true_box_conf) * obj_scale + (1 - object_mask_) * conf_delta * noobj_scale
+    # print('conf ',conf_delta.shape) # (batch size, 7/14/28, 7/14/28, 3)
+    loss_conf    = tf.reduce_sum(tf.square(conf_delta), list(range(1,4)))
     return loss_conf
 
-def loss_class_tensor(object_mask, pred_box_class, true_box_class, class_scale):
+def loss_class_tensor(object_mask, pred_box_class, true_box_class, class_scale) -> 'calculate class loss':
     true_box_class_ = tf.cast(true_box_class, tf.int64)
     tmp = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=true_box_class_, logits=pred_box_class)
     class_delta = object_mask * tf.expand_dims(tmp, 4) * class_scale
+    # print('class ', class_delta.shape) # (batch size, 7/14/28, 7/14/28, 3, 1)
     loss_class = tf.reduce_sum(class_delta, list(range(1,5)))
     return loss_class
 

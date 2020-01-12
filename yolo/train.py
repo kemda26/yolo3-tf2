@@ -19,7 +19,7 @@ def train_fn(model,
              num_epoches=500, 
              save_dir=None, 
              weight_name='weights',
-             num_warmups=2) -> 'train function':
+             num_warmups=0) -> 'train function':
     
     save_file = _setup(save_dir=save_dir, weight_name=weight_name)
     es = EarlyStopping(patience=10)
@@ -47,28 +47,39 @@ def train_fn(model,
                                                         global_step=global_step,
                                                         decay_steps=5,
                                                         decay_rate=0.8,
-                                                        staircase=True)
-            optimizer = AdamWeightDecayOptimizer(learning_rate=learning_rate_fn(),
-                                                weight_decay_rate=0.005)
-            # optimizer = tf.train.AdamOptimizer( learning_rate=learning_rate_fn() )
+                                                        staircase=False)
+            # optimizer = AdamWeightDecayOptimizer(learning_rate=learning_rate_fn(),
+            #                                     weight_decay_rate=0.01)
+            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate_fn())
             global_step.assign_add(1)
         else:
-            print('warm up...')
+            print('Warm up...')
 
         # 1. update params
-        train_loss = _loop_train(model, optimizer, train_generator, epoch, learning_rate, warm_up, warm_up_step)
+        print('Training...')
+        train_loss, train_loss_box, train_loss_conf, train_loss_class = _loop_train(model, optimizer, train_generator, epoch, learning_rate, warm_up, warm_up_step)
 
         # 2. monitor validation loss
-        if valid_generator:
+        if valid_generator and valid_generator.steps_per_epoch != 0:
             print('Validating...')
-            val_loss = _loop_validation(model, valid_generator)
-            valid_loss = val_loss
+            valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class = _loop_validation(model, valid_generator)
+            # valid_loss = val_loss
         else:
-            valid_loss = train_loss
+            valid_loss = train_loss # if no validation loss, use training loss as validation loss instead
+            valid_loss_box, valid_loss_conf, valid_loss_class = train_loss_box, train_loss_conf, train_loss_class
 
         tensorboard_logger(writer_1, writer_2, train_loss, valid_loss, epoch)
-        print("{}-th loss = {}, train_loss = {}".format(epoch, valid_loss, train_loss))
-        logger.write({ 'valid_loss': valid_loss.numpy(), 'train_loss': train_loss.numpy() })
+        print("{}-th epoch --> train_loss = {}, valid_loss = {}".format(epoch, train_loss, valid_loss))
+        logger.write({ 
+            'train_loss': train_loss.numpy(),
+            'train_box': train_loss_box.numpy(),
+            'train_conf': train_loss_conf.numpy()
+            'train_class': train_loss_class.numpy()
+            'valid_loss': valid_loss.numpy(),
+            'valid_box': valid_loss_box.numpy(),
+            'valid_conf': valid_loss_conf.numpy(),
+            'valid_class': valid_loss_class.numpy(),
+        })
 
         # 3. update weights
         history.append(valid_loss)
@@ -87,44 +98,62 @@ def train_fn(model,
 def _loop_train(model, optimizer, generator, epoch, learning_rate, warm_up, warm_up_step):
     # one epoch
     n_steps = generator.steps_per_epoch
-    loss_value = 0
+    loss_value, loss_box_value, loss_conf_value, loss_class_value = 0, 0, 0, 0
     for _ in tqdm(range(n_steps)):
-        x, yolo_1, yolo_2, yolo_3 = generator.next_batch()
+        image_tensor, yolo_1, yolo_2, yolo_3 = generator.next_batch()
         y_true = [yolo_1, yolo_2, yolo_3]
-        grads, loss = _grad_fn(model, x, y_true)
+        grads, loss, loss_box, loss_conf, loss_class = _grad_fn(model, image_tensor, y_true)
         loss_value += loss
+        loss_box_value += loss_box
+        loss_conf_value += loss_conf
+        loss_class_value += loss_class
         if warm_up:
             warm_up_learning_rate = (warm_up_step / (n_steps * epoch)) * learning_rate
             warm_up_step += 1
-            optimizer = AdamWeightDecayOptimizer(learning_rate=warm_up_learning_rate,
-                                                 weight_decay_rate=0.008)
-            optimizer.apply_gradients(zip( grads, model.trainable_variables ))
+            # optimizer = AdamWeightDecayOptimizer(learning_rate=warm_up_learning_rate,
+            #                                      weight_decay_rate=0.008)
+            optimizer = tf.train.AdamOptimizer(learning_rate=warm_up_learning_rate)
+            optimizer.apply_gradients(zip(grads, model.trainable_variables))
         else:
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
+
     loss_value /= generator.steps_per_epoch
-    return loss_value
+    loss_box_value /= generator.steps_per_epoch
+    loss_conf_value /= generator.steps_per_epoch
+    loss_class_value /= generator.steps_per_epoch
+
+    return loss_value, loss_box_value, loss_conf_value, loss_class_value
 
 
 def _grad_fn(model, images_tensor, list_y_true) -> 'compute gradient & loss':
     with tf.GradientTape() as tape:
-        logits = model(images_tensor)
-        loss = loss_fn(list_y_true, logits)
+        list_y_pred = model(images_tensor)
+        loss, loss_box, loss_conf, loss_class = loss_fn(list_y_true, list_y_pred)
     grads = tape.gradient(loss, model.trainable_variables)
-    return grads , loss
+    return grads, loss, loss_box, loss_conf, loss_class
 
 
 def _loop_validation(model, generator):
     # one epoch
     n_steps = generator.steps_per_epoch
-    loss_value = 0
+    loss_value, loss_box_value, loss_conf_value, loss_class_value = 0, 0, 0, 0
     for _ in tqdm(range(n_steps)):
-        x, yolo_1, yolo_2, yolo_3 = generator.next_batch()
+        image_tensor, yolo_1, yolo_2, yolo_3 = generator.next_batch()
         y_true = [yolo_1, yolo_2, yolo_3]
-        y_pred = model(x)
-        loss_value += loss_fn(y_true, y_pred)
-    loss_value /= generator.steps_per_epoch
-    return loss_value
+        y_pred = model(image_tensor)
+        loss, loss_box, loss_conf, loss_class = loss_fn(y_true, y_pred)
 
+        loss_value += loss
+        loss_box_value += loss_box
+        loss_conf_value += loss_conf
+        loss_class_value += loss_class
+
+    loss_value /= generator.steps_per_epoch
+    loss_box_value /= generator.steps_per_epoch
+    loss_conf_value /= generator.steps_per_epoch
+    loss_class_value /= generator.steps_per_epoch
+
+    return loss_value, loss_box_value, loss_conf_value, loss_class_value
 
 def _setup(save_dir, weight_name='weights'):
     if save_dir:
@@ -148,10 +177,16 @@ def tensorboard_logger(writer_1, writer_2, train_loss, valid_loss, idx):
 
     with writer_1.as_default(), tf.contrib.summary.always_record_summaries():
         tf.contrib.summary.scalar('loss', valid_loss, step=idx)
+        tf.contrib.summary.scalar('loss_box', valid_loss_box, step=idx)
+        tf.contrib.summary.scalar('loss_conf', valid_loss_conf, step=idx)
+        tf.contrib.summary.scalar('loss_class', valid_loss_class, step=idx)
     tf.contrib.summary.flush()
 
     with writer_2.as_default(), tf.contrib.summary.always_record_summaries():
         tf.contrib.summary.scalar('loss', train_loss, step=idx)
+        tf.contrib.summary.scalar('loss_box', train_loss_box, step=idx)
+        tf.contrib.summary.scalar('loss_conf', train_loss_conf, step=idx)
+        tf.contrib.summary.scalar('loss_class', train_loss_class, step=idx)
     tf.contrib.summary.flush()
 
 
