@@ -80,7 +80,7 @@ def train_fn(model,
             'valid_conf': valid_loss_conf.numpy(),
             'valid_class': valid_loss_class.numpy(),
         }, display=False)
-
+        
         # 3. update weights
         history.append(round(valid_loss.numpy(), 4))
         if save_file is not None and round(valid_loss.numpy(), 4) == min(history):
