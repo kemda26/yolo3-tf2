@@ -115,12 +115,24 @@ class Logger(object):
             if not os.path.exists(path_): os.makedirs(path_)
             for filename in filenames:     # for reference
                 shutil.copy(filename, path_)
-        path = os.path.join(path, 'log.csv')
+        imgfile = os.path.join(path, 'img.csv')
+        logfile = os.path.join(path, 'log.csv')
 
         self.write_header = True
+        self.write_header_img = True
         # self.log_entry = {}
-        self.f = open(path, 'w')
+        self.f = open(logfile, 'w')
+        self.img_f = open(imgfile, 'w')
         self.writer = None  # DictWriter created with first call to write() method
+        self.writer_img = None
+
+    def write_img(self, input):
+        if self.write_header_img:
+            fieldnames = [x for x in input.keys()]
+            self.writer_img = csv.DictWriter(self.img_f, fieldnames=fieldnames)
+            self.writer_img.writeheader()
+            self.write_header_img = False
+        self.writer_img.writerow(input)        
 
     def write(self, input, display=True) -> 'input is a dictionary':
         """ Write 1 log entry to file, and optionally to stdout

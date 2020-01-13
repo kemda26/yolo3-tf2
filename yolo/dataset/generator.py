@@ -6,6 +6,10 @@ import tensorflow as tf
 from yolo.dataset.augment import ImgAugment
 from yolo.utils.box import create_anchor_boxes
 from yolo.dataset.annotation import parse_annotation
+
+# from augment import ImgAugment
+# from utils.box import create_anchor_boxes
+# from annotation import parse_annotation
 # from yolo import COCO_ANCHORS
 
 from random import shuffle
@@ -31,12 +35,12 @@ class BatchGenerator(object):
         self.ann_fnames = ann_fnames
         self.img_dir = img_dir
         self.lable_names = labels
-        self.min_net_size       = (min_net_size//DOWNSAMPLE_RATIO)*DOWNSAMPLE_RATIO
-        self.max_net_size       = (max_net_size//DOWNSAMPLE_RATIO)*DOWNSAMPLE_RATIO
+        self.min_net_size = (min_net_size // DOWNSAMPLE_RATIO) * DOWNSAMPLE_RATIO
+        self.max_net_size = (max_net_size // DOWNSAMPLE_RATIO) * DOWNSAMPLE_RATIO
         # self.min_net_size = min_net_size
         # self.max_net_size = max_net_size
-        self.jitter             = jitter
-        self.anchors            = create_anchor_boxes(anchors)
+        self.jitter = jitter
+        self.anchors = create_anchor_boxes(anchors)
         self.batch_size = batch_size
         self.shuffle = shuffle
         
@@ -54,24 +58,28 @@ class BatchGenerator(object):
         print(self.min_net_size, self.max_net_size, self._net_size)
 
     def _update_net_size(self):
-        self._net_size = DOWNSAMPLE_RATIO*np.random.randint(self.min_net_size/DOWNSAMPLE_RATIO, \
-                                                            self.max_net_size/DOWNSAMPLE_RATIO+1)
+        self._net_size = DOWNSAMPLE_RATIO * np.random.randint(self.min_net_size / DOWNSAMPLE_RATIO, \
+                                                                self.max_net_size / DOWNSAMPLE_RATIO + 1)
         # self._net_size = self.min_net_size
 
     def next_batch(self):
         if self._epoch >= 5:
             self._update_net_size()
 
-        x_batch = []
-        y1_batch = []
-        y2_batch = []
-        y3_batch = []
+        x_batch   = []
+        y1_batch  = []
+        y2_batch  = []
+        y3_batch  = []
+        img_names = []
+        labels    = []
         for _ in range(self.batch_size):
-            x, y1, y2, y3 = self._get()
+            x, y1, y2, y3, img_name, label = self._get()
             x_batch.append(x)
             y1_batch.append(y1)
             y2_batch.append(y2)
             y3_batch.append(y3)
+            img_names.append(img_name)
+            labels.append(label)
         
         if self._end_epoch == True:
             if self.shuffle:
@@ -82,7 +90,9 @@ class BatchGenerator(object):
         return np.array(x_batch).astype(np.float32), \
                np.array(y1_batch).astype(np.float32), \
                np.array(y2_batch).astype(np.float32), \
-               np.array(y3_batch).astype(np.float32)
+               np.array(y3_batch).astype(np.float32), \
+               img_names, \
+               labels
 
     def _get(self):
         
@@ -90,6 +100,8 @@ class BatchGenerator(object):
 
         # 1. get input file & its annotation
         fname, boxes, coded_labels = parse_annotation(self.ann_fnames[self._index], self.img_dir, self.lable_names)
+        print(fname)
+        print(coded_labels)
 
         # 2. read image in fixed size
         img_augmenter = ImgAugment(net_size, net_size, self.jitter)
@@ -108,7 +120,7 @@ class BatchGenerator(object):
             self._index = 0
             self._end_epoch = True
         
-        return normalize(img), list_ys[2], list_ys[1], list_ys[0]
+        return normalize(img), list_ys[2], list_ys[1], list_ys[0], fname, coded_labels
 
 
 def _create_empty_xy(net_size, n_classes, n_boxes=3):
@@ -180,29 +192,30 @@ def _assign_box(yolo, box_index, box, label):
 
 
 def normalize(image):
-    return image/255.
+    return image / 255.
 
 
 if __name__ == '__main__':
     import os
     import glob
     from yolo import PROJECT_ROOT
-    def test(x_batch, yolo_1, yolo_2, yolo_3):
-        expected_x_batch = np.load("x_batch.npy")
-        expected_yolo_1 = np.load("yolo_1.npy")
-        expected_yolo_2 = np.load("yolo_2.npy")
-        expected_yolo_3 = np.load("yolo_3.npy")
+    # def test(x_batch, yolo_1, yolo_2, yolo_3):
+    #     expected_x_batch = np.load("x_batch.npy")
+    #     expected_yolo_1 = np.load("yolo_1.npy")
+    #     expected_yolo_2 = np.load("yolo_2.npy")
+    #     expected_yolo_3 = np.load("yolo_3.npy")
         
-        for a, b in zip([x_batch, yolo_1, yolo_2, yolo_3],
-                        [expected_x_batch, expected_yolo_1, expected_yolo_2, expected_yolo_3]):
-            if np.allclose(a, b):
-                print("Test Passed")
-            else:
-                print("Test Failed")
-                print(np.sum(a-b))
+    #     for a, b in zip([x_batch, yolo_1, yolo_2, yolo_3],
+    #                     [expected_x_batch, expected_yolo_1, expected_yolo_2, expected_yolo_3]):
+    #         if np.allclose(a, b):
+    #             print("Test Passed")
+    #         else:
+    #             print("Test Failed")
+    #             print(np.sum(a-b))
 
-    ann_dir = os.path.join(PROJECT_ROOT, "tests", "dataset", "raccoon", "anns")
-    img_dir = os.path.join(PROJECT_ROOT, "tests", "dataset", "raccoon", "imgs")
+    # ann_dir = os.path.join(PROJECT_ROOT, "tests", "dataset", "raccoon", "anns")
+    ann_dir = 'tests/dataset/svhn/anns'
+    # img_dir = os.path.join(PROJECT_ROOT, "tests", "dataset", "raccoon", "imgs")
     ann_fnames = glob.glob(os.path.join(ann_dir, "*.xml"))
 
     iterator = create_generator(ann_fnames, img_dir, 2, jitter=False)

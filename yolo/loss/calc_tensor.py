@@ -29,13 +29,14 @@ def loss_fn(list_y_trues, list_y_preds,
     loss_yolo_1, list_loss_1 = calculator.run(list_y_trues[0], list_y_preds[0], anchors=anchors[12:]) # y_true (1, 7, 7, 3, 15)
     loss_yolo_2, list_loss_2 = calculator.run(list_y_trues[1], list_y_preds[1], anchors=anchors[6:12]) # y_true (1, 14, 14, 3, 15)
     loss_yolo_3, list_loss_3 = calculator.run(list_y_trues[2], list_y_preds[2], anchors=anchors[:6]) # y_true (1, 28, 28, 3, 15)
+    loss_each_img = tf.sqrt(loss_yolo_1 + loss_yolo_2 + loss_yolo_3)
 
     list_3_losses = [ list_loss_1, list_loss_2, list_loss_3 ]
     loss_box = [loss[0] for loss in list_3_losses]
     loss_conf = [loss[1] for loss in list_3_losses]
     loss_class = [loss[2] for loss in list_3_losses]
 
-    return sum_loss([loss_yolo_1, loss_yolo_2, loss_yolo_3]), sum_loss(loss_box), sum_loss(loss_conf), tf.reduce_sum(loss_class)
+    return sum_loss([loss_yolo_1, loss_yolo_2, loss_yolo_3]), tf.reduce_sum(loss_box), tf.reduce_sum(loss_conf), tf.reduce_sum(loss_class), loss_each_img
 
 
 class LossTensorCalculator(object):
@@ -58,9 +59,9 @@ class LossTensorCalculator(object):
     def run(self, y_true, y_pred, anchors=[66,303, 81,318, 104,337]):
         # 1. setup
         y_pred = tf.reshape(y_pred, y_true.shape)
-        # print(y_true.shape)
-        object_mask = tf.expand_dims(y_true[..., 4], 4)
-        # print(object_mask.shape)
+        # print(y_true[...,4].shape) # (1, grid, grid, 3, 15)
+        object_mask = tf.expand_dims(y_true[..., 4], 4) # contain 0, 1 value, indicates which bbox has object in it
+        # print(object_mask.shape) # (1, grid, grid, 3, 1)
 
         # 2. Adjust prediction (bxy, twh)
         preds = adjust_pred_tensor(y_pred)

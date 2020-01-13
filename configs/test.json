@@ -20,7 +20,7 @@
         "valid_annot_folder":   "",
         "test_image_folder":    "tests/dataset/svhn/imgs/",
         "test_annot_folder":    "tests/dataset/svhn/anns/",
-        "batch_size":           1,
+        "batch_size":           2,
         "learning_rate":        1e-4,
         "save_folder":          "weights/test",
         "weight_name":          "resnet50",

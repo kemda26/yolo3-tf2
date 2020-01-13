@@ -15,15 +15,15 @@ def adjust_pred_tensor(y_pred):
     return preds
 
 def adjust_true_tensor(y_true):
-    true_    = y_true[..., :5]
-    true_class = tf.argmax(y_true[..., 5:], -1)
-    trues = tf.concat([true_, tf.expand_dims(tf.cast(true_class, tf.float32), -1)], axis=-1)
+    true_coord = y_true[..., :5] # coordinates of bbox
+    true_class = tf.argmax(y_true[..., 5:], -1) # highest class score
+
+    trues = tf.concat([true_coord, tf.expand_dims(tf.cast(true_class, tf.float32), -1)], axis=-1)
     return trues
 
 def conf_delta_tensor(y_true, y_pred, anchors, ignore_thresh):
 
     pred_box_xy, pred_box_wh, pred_box_conf = y_pred[..., :2], y_pred[..., 2:4], y_pred[..., 4]
-
     
     anchor_grid = _create_mesh_anchor(anchors, *y_pred.shape[:4])
     true_wh = y_true[:,:,:,:,2:4]
@@ -75,7 +75,8 @@ def loss_coord_tensor(object_mask, pred_box, true_box, wh_scale, xywh_scale) -> 
     # (batch size, 7/14/28, 7/14/28, 3, 4) x,y,w,h
     # print('coord ', xy_delta.shape) 
     xy_delta = object_mask * (pred_box - true_box) * wh_scale * xywh_scale
-    loss_xy  = tf.reduce_sum(tf.square(xy_delta), list(range(1,5)))
+    loss_xy  = tf.reduce_sum(tf.square(xy_delta), list(range(1,5))) # sum all dimensions except batch size (1st dimension)
+    # print('coord ', loss_xy.shape)
     return loss_xy
     
 def loss_conf_tensor(object_mask, pred_box_conf, true_box_conf, obj_scale, noobj_scale, conf_delta) -> 'calculate confidence loss':
@@ -83,6 +84,7 @@ def loss_conf_tensor(object_mask, pred_box_conf, true_box_conf, obj_scale, noobj
     conf_delta   = object_mask_ * (pred_box_conf - true_box_conf) * obj_scale + (1 - object_mask_) * conf_delta * noobj_scale
     # print('conf ',conf_delta.shape) # (batch size, 7/14/28, 7/14/28, 3)
     loss_conf    = tf.reduce_sum(tf.square(conf_delta), list(range(1,4)))
+    # print('conf', loss_conf.shape)
     return loss_conf
 
 def loss_class_tensor(object_mask, pred_box_class, true_box_class, class_scale) -> 'calculate class loss':
@@ -91,6 +93,7 @@ def loss_class_tensor(object_mask, pred_box_class, true_box_class, class_scale) 
     class_delta = object_mask * tf.expand_dims(tmp, 4) * class_scale
     # print('class ', class_delta.shape) # (batch size, 7/14/28, 7/14/28, 3, 1)
     loss_class = tf.reduce_sum(class_delta, list(range(1,5)))
+    # print('class', loss_class.shape)
     return loss_class
 
 

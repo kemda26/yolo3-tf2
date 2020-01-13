@@ -34,15 +34,12 @@ def train_fn(model,
 
     global_step = tf.Variable(0, trainable=False)
     learning_rate = 1e-4
-    # boundaries = [10, 15, 30]
-    # values = [1e-4, 5e-5, 1e-5, 5e-6]
     optimizer = None
     warm_up_step = 1
     for epoch in range(1, num_epoches + 1):
         warm_up = True if epoch <= num_warmups else False
         if not warm_up:
             # learning rate scheduler
-            # learning_rate_fn = tf.train.piecewise_constant(global_step, boundaries, values)
             learning_rate_fn = tf.train.exponential_decay(learning_rate=learning_rate, 
                                                         global_step=global_step,
                                                         decay_steps=10,
@@ -62,7 +59,8 @@ def train_fn(model,
         # 2. monitor validation loss
         if valid_generator and valid_generator.steps_per_epoch != 0:
             print('Validating...')
-            valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class = _loop_validation(model, valid_generator)
+            valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class, highest_loss_dict = _loop_validation(model, valid_generator)
+            logger.write_img(highest_loss_dict)
             # valid_loss = val_loss
         else:
             valid_loss = train_loss # if no validation loss, use training loss as validation loss instead
@@ -102,7 +100,7 @@ def _loop_train(model, optimizer, generator, epoch, learning_rate, warm_up, warm
     n_steps = generator.steps_per_epoch
     loss_value, loss_box_value, loss_conf_value, loss_class_value = 0, 0, 0, 0
     for _ in tqdm(range(n_steps)):
-        image_tensor, yolo_1, yolo_2, yolo_3 = generator.next_batch()
+        image_tensor, yolo_1, yolo_2, yolo_3, img_names, labels = generator.next_batch()
         y_true = [yolo_1, yolo_2, yolo_3]
         grads, loss, loss_box, loss_conf, loss_class = _grad_fn(model, image_tensor, y_true)
         loss_value += loss
@@ -130,7 +128,7 @@ def _loop_train(model, optimizer, generator, epoch, learning_rate, warm_up, warm
 def _grad_fn(model, images_tensor, list_y_true) -> 'compute gradient & loss':
     with tf.GradientTape() as tape:
         list_y_pred = model(images_tensor)
-        loss, loss_box, loss_conf, loss_class = loss_fn(list_y_true, list_y_pred)
+        loss, loss_box, loss_conf, loss_class, _ = loss_fn(list_y_true, list_y_pred)
     grads = tape.gradient(loss, model.trainable_variables)
     return grads, loss, loss_box, loss_conf, loss_class
 
@@ -139,11 +137,13 @@ def _loop_validation(model, generator):
     # one epoch
     n_steps = generator.steps_per_epoch
     loss_value, loss_box_value, loss_conf_value, loss_class_value = 0, 0, 0, 0
+    highest_loss_dict = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] }
     for _ in tqdm(range(n_steps)):
-        image_tensor, yolo_1, yolo_2, yolo_3 = generator.next_batch()
+        image_tensor, yolo_1, yolo_2, yolo_3, img_names, labels = generator.next_batch()
         y_true = [yolo_1, yolo_2, yolo_3]
         y_pred = model(image_tensor)
-        loss, loss_box, loss_conf, loss_class = loss_fn(y_true, y_pred)
+        loss, loss_box, loss_conf, loss_class, loss_each_img = loss_fn(y_true, y_pred)
+        find_highest_loss_each_class(loss_each_img, img_names, labels, highest_loss_dict)
 
         loss_value += loss
         loss_box_value += loss_box
@@ -155,7 +155,7 @@ def _loop_validation(model, generator):
     loss_conf_value /= generator.steps_per_epoch
     loss_class_value /= generator.steps_per_epoch
 
-    return loss_value, loss_box_value, loss_conf_value, loss_class_value
+    return loss_value, loss_box_value, loss_conf_value, loss_class_value, highest_loss_dict
 
 def _setup(save_dir, weight_name='weights'):
     if save_dir:
@@ -190,6 +190,20 @@ def tensorboard_logger(writer_1, writer_2, train_loss, train_loss_box, train_los
         tf.contrib.summary.scalar('loss_conf', train_loss_conf, step=idx)
         tf.contrib.summary.scalar('loss_class', train_loss_class, step=idx)
     tf.contrib.summary.flush()
+
+
+def key_sort(value):
+    return value[0]
+
+def find_highest_loss_each_class(loss_each_img, img_names, list_labels, class_dict):
+    losses = list(loss_each_img.numpy())
+    for loss, img_name, labels in zip(losses, img_names, list_labels):
+        for label in labels:
+            class_dict[label].append(( loss, img_name, labels ))
+    for key, img_list in class_dict.items():
+        img_list.sort(key=key_sort, reverse=True)
+        img_list = img_list[:10]
+        class_dict[key] = img_list
 
 
 if __name__ == '__main__':
