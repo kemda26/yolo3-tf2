@@ -8,7 +8,7 @@ argparser = argparse.ArgumentParser(
 argparser.add_argument(
     '-c',
     '--config',
-    default="configs/svhn.json",
+    default="configs/test.json",
     help='config file')
 
 
@@ -18,8 +18,10 @@ if __name__ == '__main__':
     config = args.config
     config_parser = ConfigParser(config)
 
+    split_train_valid = config_parser.split_train_val()
+    print(split_train_valid)
     # 1. create generator
-    train_generator, valid_generator = config_parser.create_generator(split_train_valid=False)
+    train_generator, valid_generator = config_parser.create_generator(split_train_valid=split_train_valid)
 
     # 2. create model
     model = config_parser.create_model()
