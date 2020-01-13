@@ -12,6 +12,7 @@ def adjust_pred_tensor(y_pred):
     pred_classes = y_pred[..., 5:]                                              
     
     preds = tf.concat([pred_xy, pred_wh, tf.expand_dims(pred_conf, axis=-1), pred_classes], axis=-1)
+    print(preds.shape)
     return preds
 
 def adjust_true_tensor(y_true):
