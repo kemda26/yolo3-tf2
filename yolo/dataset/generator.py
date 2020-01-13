@@ -27,8 +27,8 @@ class BatchGenerator(object):
                  labels,
                  batch_size,
                  anchors=[23,121, 30,241, 40,174, 42,273, 53,316, 56,230, 66,303, 81,318, 104,337],   
-                 min_net_size=320,
-                 max_net_size=608,    
+                 min_net_size=224,
+                 max_net_size=224,    
                  jitter=True,
                  shuffle=True):
 

@@ -19,7 +19,6 @@ if __name__ == '__main__':
     config_parser = ConfigParser(config)
 
     split_train_valid = config_parser.split_train_val()
-    print(split_train_valid)
     # 1. create generator
     train_generator, valid_generator = config_parser.create_generator(split_train_valid=split_train_valid)
 

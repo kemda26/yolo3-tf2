@@ -22,7 +22,7 @@ def train_fn(model,
              num_warmups=5) -> 'train function':
     
     save_file = _setup(save_dir=save_dir, weight_name=weight_name)
-    es = EarlyStopping(patience=15)
+    es = EarlyStopping(patience=10)
     history = []
     current_time = date.today().strftime('%d-%m-%Y_') + datetime.now().strftime('%H:%M:%S')
 
@@ -107,8 +107,8 @@ def _loop_train(model, optimizer, generator, epoch, learning_rate, warm_up, warm
         image_tensor, yolo_1, yolo_2, yolo_3, _, _ = generator.next_batch()
         # image_tensor, yolo_1, yolo_2, yolo_3 = generator.next_batch()
         y_true = [yolo_1, yolo_2, yolo_3]
-        # y_pred = model(image_tensor)
-        grads, loss, y_pred = _grad_fn(model, image_tensor, y_true)
+        y_pred = model(image_tensor)
+        grads, loss = _grad_fn(model, image_tensor, y_true)
         _, loss_box, loss_conf, loss_class, _ = loss_component(y_true, y_pred)
 
         loss_value += loss
@@ -140,8 +140,9 @@ def _grad_fn(model, images_tensor, list_y_true, list_y_pred=None) -> 'compute gr
     with tf.GradientTape() as tape:
         list_y_pred = model(images_tensor)
         loss = loss_fn(list_y_true, list_y_pred)
-    grads = tape.gradient(loss, model.trainable_variables)
-    return grads, loss, list_y_pred
+        with tape.stop_recording():
+            grads = tape.gradient(loss, model.trainable_variables)
+    return grads, loss
 
 
 def _loop_validation(model, generator):
