@@ -2,12 +2,14 @@ import tensorflow as tf
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 tf.enable_eager_execution(config=config)
+from tensorflow.python.eager import context
 # print(tf.executing_eagerly())
+import gc
 import os
 import h5py
 from tqdm import tqdm
 from datetime import datetime, date
-import time
+import time, resource, sys
 
 from yolo.loss import loss_fn, loss_component
 from .utils.utils import EarlyStopping, Logger
@@ -38,7 +40,7 @@ def train_fn(model,
     learning_rate = 1e-4
     optimizer = None
     warm_up_step = 1
-    train_loss_box, train_loss_conf, train_loss_class = 0, 0 ,0
+    # train_loss_box, train_loss_conf, train_loss_class = 0, 0 ,0
     for epoch in range(1, num_epoches + 1):
         warm_up = True if epoch <= num_warmups else False
         if not warm_up:
@@ -75,24 +77,24 @@ def train_fn(model,
         print('--> train_loss = {:.4f}, train_loss_box = {:.4f}, train_loss_conf = {:.4f}, train_loss_class = {:.4f}'.format(train_loss, train_loss_box, train_loss_conf, train_loss_class))
         print('--> valid_loss = {:.4f}, valid_loss_box = {:.4f}, valid_loss_conf = {:.4f}, valid_loss_class = {:.4f}'.format(valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class))
         logger.write({ 
-            'train_loss': train_loss.numpy(),
-            'train_box': train_loss_box.numpy(),
-            'train_conf': train_loss_conf.numpy(),
-            'train_class': train_loss_class.numpy(),
-            'valid_loss': valid_loss.numpy(),
-            'valid_box': valid_loss_box.numpy(),
-            'valid_conf': valid_loss_conf.numpy(),
-            'valid_class': valid_loss_class.numpy(),
+            'train_loss': train_loss,
+            'train_box': train_loss_box,
+            'train_conf': train_loss_conf,
+            'train_class': train_loss_class,
+            'valid_loss': valid_loss,
+            'valid_box': valid_loss_box,
+            'valid_conf': valid_loss_conf,
+            'valid_class': valid_loss_class,
         }, display=False)
         
         # 3. update weights
-        history.append(round(valid_loss.numpy(), 4))
-        if save_file is not None and round(valid_loss.numpy(), 4) == min(history):
-            print("    update weight with loss: {:4f}".format(round(valid_loss.numpy(), 4)))
+        history.append(round(valid_loss, 4))
+        if save_file is not None and round(valid_loss, 4) == min(history):
+            print("    update weight with loss: {:4f}".format(round(valid_loss, 4)))
             _save_weights(model, '{}.h5'.format(save_file))
             # model.save_weights('{}'.format(save_file), save_format='h5')
         
-        if es.step(valid_loss):
+        if es.step(round(valid_loss, 4)):
             print('early stopping')
             break
 
@@ -101,33 +103,43 @@ def train_fn(model,
     return history
 
 
-def _loop_train(model, optimizer, generator, epoch, learning_rate, warm_up, warm_up_step):
-    # one epoch
+def _loop_train(model, optimizer, generator, epoch, learning_rate, warm_up, warm_up_step) -> 'one epoch':
     n_steps = generator.steps_per_epoch
-    loss_value, loss_box_value, loss_conf_value, loss_class_value = 0, 0, 0, 0
+    total_steps = n_steps * epoch
+    loss_value, loss_box_value, loss_conf_value, loss_class_value = 0.0, 0.0, 0.0, 0.0
     for _ in tqdm(range(n_steps)):
         image_tensor, yolo_1, yolo_2, yolo_3, _, _ = generator.next_batch()
-        # image_tensor, yolo_1, yolo_2, yolo_3 = generator.next_batch()
         y_true = [yolo_1, yolo_2, yolo_3]
         y_pred = model(image_tensor)
         grads, loss = _grad_fn(model, image_tensor, y_true)
         _, loss_box, loss_conf, loss_class, _ = loss_component(y_true, y_pred)
 
-        loss_value += loss
-        loss_box_value += loss_box
-        loss_conf_value += loss_conf
-        loss_class_value += loss_class
+        loss_value += float(tf.cast(loss, tf.float32))
+        loss_box_value += float(tf.cast(loss_box, tf.float32))
+        loss_conf_value += float(tf.cast(loss_conf, tf.float32))
+        loss_class_value += float(tf.cast(loss_class, tf.float32))
 
         if warm_up:
-            warm_up_learning_rate = (warm_up_step / (n_steps * epoch)) * learning_rate
+            warm_up_learning_rate = (warm_up_step / total_steps) * learning_rate
             warm_up_step += 1
             # optimizer = AdamWeightDecayOptimizer(learning_rate=warm_up_learning_rate,
             #                                      weight_decay_rate=0.008)
             optimizer = tf.train.AdamOptimizer(learning_rate=warm_up_learning_rate)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
+            del warm_up_learning_rate
         else:
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
-        
+
+        tf.keras.backend.clear_session()
+        tf.set_random_seed(1)
+        gc.collect()
+        # context.context()._clear_caches()
+        # print(len(gc.get_objects()))
+        # print('Memory usage: {0}'.format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024))
+        # a = []
+        # for var, obj in globals().items():
+        #     a.append((var, sys.getsizeof(obj)))
+        # print(a)
         del image_tensor, y_true, y_pred, yolo_1, yolo_2, yolo_3, grads, loss, loss_box, loss_conf, loss_class, optimizer, _
 
     loss_value /= generator.steps_per_epoch
