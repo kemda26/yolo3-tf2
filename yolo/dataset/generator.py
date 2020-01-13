@@ -74,6 +74,7 @@ class BatchGenerator(object):
         labels    = []
         for _ in range(self.batch_size):
             x, y1, y2, y3, img_name, label = self._get()
+            # x, y1, y2, y3 = self._get()
             x_batch.append(x)
             y1_batch.append(y1)
             y2_batch.append(y2)
@@ -121,11 +122,12 @@ class BatchGenerator(object):
             self._end_epoch = True
         
         return normalize(img), list_ys[2], list_ys[1], list_ys[0], fname, coded_labels
+        # return normalize(img), list_ys[2], list_ys[1], list_ys[0]
 
 
 def _create_empty_xy(net_size, n_classes, n_boxes=3):
     # get image input size, change every 10 batches
-    base_grid_h, base_grid_w = net_size//DOWNSAMPLE_RATIO, net_size//DOWNSAMPLE_RATIO
+    base_grid_h, base_grid_w = net_size // DOWNSAMPLE_RATIO, net_size // DOWNSAMPLE_RATIO
     # base_grid_h, base_grid_w = net_size, net_size
 
     # initialize the inputs and the outputs

@@ -7,7 +7,7 @@ from tqdm import tqdm
 from datetime import datetime, date
 import time
 
-from yolo.loss import loss_fn
+from yolo.loss import loss_fn, loss_component
 from .utils.utils import EarlyStopping, Logger
 from yolo.optimizer import AdamWeightDecayOptimizer
 
@@ -19,10 +19,10 @@ def train_fn(model,
              num_epoches=500, 
              save_dir=None, 
              weight_name='weights',
-             num_warmups=5) -> 'train function':
+             num_warmups=0) -> 'train function':
     
     save_file = _setup(save_dir=save_dir, weight_name=weight_name)
-    es = EarlyStopping(patience=10)
+    es = EarlyStopping(patience=15)
     history = []
     current_time = date.today().strftime('%d-%m-%Y_') + datetime.now().strftime('%H:%M:%S')
 
@@ -36,6 +36,7 @@ def train_fn(model,
     learning_rate = 1e-4
     optimizer = None
     warm_up_step = 1
+    train_loss_box, train_loss_conf, train_loss_class = 0, 0 ,0
     for epoch in range(1, num_epoches + 1):
         warm_up = True if epoch <= num_warmups else False
         if not warm_up:
@@ -55,13 +56,14 @@ def train_fn(model,
         # 1. update params
         print('Training...')
         train_loss, train_loss_box, train_loss_conf, train_loss_class = _loop_train(model, optimizer, train_generator, epoch, learning_rate, warm_up, warm_up_step)
+        # train_loss = _loop_train(model, optimizer, train_generator, epoch, learning_rate, warm_up, warm_up_step)
 
         # 2. monitor validation loss
         if valid_generator and valid_generator.steps_per_epoch != 0:
             print('Validating...')
             valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class, highest_loss_dict = _loop_validation(model, valid_generator)
             logger.write_img(highest_loss_dict)
-            # valid_loss = val_loss
+            del highest_loss_dict
         else:
             valid_loss = train_loss # if no validation loss, use training loss as validation loss instead
             valid_loss_box, valid_loss_conf, valid_loss_class = train_loss_box, train_loss_conf, train_loss_class
@@ -92,6 +94,8 @@ def train_fn(model,
             print('early stopping')
             break
 
+        del train_loss, train_loss_box, train_loss_conf, train_loss_class, valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class
+
     return history
 
 
@@ -100,13 +104,18 @@ def _loop_train(model, optimizer, generator, epoch, learning_rate, warm_up, warm
     n_steps = generator.steps_per_epoch
     loss_value, loss_box_value, loss_conf_value, loss_class_value = 0, 0, 0, 0
     for _ in tqdm(range(n_steps)):
-        image_tensor, yolo_1, yolo_2, yolo_3, img_names, labels = generator.next_batch()
+        image_tensor, yolo_1, yolo_2, yolo_3, _, _ = generator.next_batch()
+        # image_tensor, yolo_1, yolo_2, yolo_3 = generator.next_batch()
         y_true = [yolo_1, yolo_2, yolo_3]
-        grads, loss, loss_box, loss_conf, loss_class = _grad_fn(model, image_tensor, y_true)
+        # y_pred = model(image_tensor)
+        grads, loss, y_pred = _grad_fn(model, image_tensor, y_true)
+        _, loss_box, loss_conf, loss_class, _ = loss_component(y_true, y_pred)
+
         loss_value += loss
         loss_box_value += loss_box
         loss_conf_value += loss_conf
         loss_class_value += loss_class
+
         if warm_up:
             warm_up_learning_rate = (warm_up_step / (n_steps * epoch)) * learning_rate
             warm_up_step += 1
@@ -116,25 +125,23 @@ def _loop_train(model, optimizer, generator, epoch, learning_rate, warm_up, warm
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
         else:
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
+        
+        del image_tensor, y_true, y_pred, yolo_1, yolo_2, yolo_3, grads, loss, loss_box, loss_conf, loss_class, optimizer, _
 
     loss_value /= generator.steps_per_epoch
-    loss_box_value /= generator.steps_per_epoch
+    loss_box_value /= generator.steps_per_epoch 
     loss_conf_value /= generator.steps_per_epoch
     loss_class_value /= generator.steps_per_epoch
 
     return loss_value, loss_box_value, loss_conf_value, loss_class_value
 
 
-def _grad_fn(model, images_tensor, list_y_true) -> 'compute gradient & loss':
-    with tf.GradientTape(watch_accessed_variables=False) as tape:
-        tape.watch(model.trainable_variables)
-
+def _grad_fn(model, images_tensor, list_y_true, list_y_pred=None) -> 'compute gradient & loss':
+    with tf.GradientTape() as tape:
         list_y_pred = model(images_tensor)
-        loss, loss_box, loss_conf, loss_class, _ = loss_fn(list_y_true, list_y_pred)
-        tape.watch(loss)
-        with tape.stop_recording():
-            grads = tape.gradient(loss, model.trainable_variables)
-    return grads, loss, loss_box, loss_conf, loss_class
+        loss = loss_fn(list_y_true, list_y_pred)
+    grads = tape.gradient(loss, model.trainable_variables)
+    return grads, loss, list_y_pred
 
 
 def _loop_validation(model, generator):
@@ -146,7 +153,7 @@ def _loop_validation(model, generator):
         image_tensor, yolo_1, yolo_2, yolo_3, img_names, labels = generator.next_batch()
         y_true = [yolo_1, yolo_2, yolo_3]
         y_pred = model(image_tensor)
-        loss, loss_box, loss_conf, loss_class, loss_each_img = loss_fn(y_true, y_pred)
+        loss, loss_box, loss_conf, loss_class, loss_each_img = loss_component(y_true, y_pred)
         find_highest_loss_each_class(loss_each_img, img_names, labels, highest_loss_dict)
 
         loss_value += loss
@@ -154,12 +161,15 @@ def _loop_validation(model, generator):
         loss_conf_value += loss_conf
         loss_class_value += loss_class
 
+        del y_true, y_pred, yolo_1, yolo_2, yolo_3, img_names, labels, loss, loss_box, loss_conf, loss_class
+
     loss_value /= generator.steps_per_epoch
     loss_box_value /= generator.steps_per_epoch
     loss_conf_value /= generator.steps_per_epoch
     loss_class_value /= generator.steps_per_epoch
-
+    
     return loss_value, loss_box_value, loss_conf_value, loss_class_value, highest_loss_dict
+
 
 def _setup(save_dir, weight_name='weights'):
     if save_dir:
