@@ -59,7 +59,7 @@ def train_fn(model,
 
         # 1. update params
         print('Training...')
-        train_loss, train_loss_box, train_loss_conf, train_loss_class = _loop_train(model, optimizer, train_generator, epoch, learning_rate, warm_up, warm_up_step)
+        train_loss, train_loss_box, train_loss_conf, train_loss_class = _loop_train(model, optimizer, train_generator, num_warmups, learning_rate, warm_up, warm_up_step)
         # train_loss = _loop_train(model, optimizer, train_generator, epoch, learning_rate, warm_up, warm_up_step)
 
         # 2. monitor validation loss
@@ -98,14 +98,15 @@ def train_fn(model,
             print('early stopping')
             break
 
+        tf.keras.backend.clear_session()
+        tf.set_random_seed(1)
+        gc.collect()
         del train_loss, train_loss_box, train_loss_conf, train_loss_class, valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class
 
-    return history
 
-
-def _loop_train(model, optimizer, generator, epoch, learning_rate, warm_up, warm_up_step) -> 'one epoch':
+def _loop_train(model, optimizer, generator, num_warmups, learning_rate, warm_up, warm_up_step) -> 'one epoch':
     n_steps = generator.steps_per_epoch
-    total_steps = n_steps * epoch
+    total_steps = n_steps * num_warmups
     loss_value, loss_box_value, loss_conf_value, loss_class_value = 0.0, 0.0, 0.0, 0.0
     for _ in tqdm(range(n_steps)):
         image_tensor, yolo_1, yolo_2, yolo_3, _, _ = generator.next_batch()
@@ -162,7 +163,7 @@ def _grad_fn(model, images_tensor, list_y_true, list_y_pred=None) -> 'compute gr
 def _loop_validation(model, generator):
     # one epoch
     n_steps = generator.steps_per_epoch
-    loss_value, loss_box_value, loss_conf_value, loss_class_value = 0, 0, 0, 0
+    loss_value, loss_box_value, loss_conf_value, loss_class_value = 0.0, 0.0, 0.0, 0.0
     highest_loss_dict = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] }
     for _ in tqdm(range(n_steps)):
         image_tensor, yolo_1, yolo_2, yolo_3, img_names, labels = generator.next_batch()
@@ -171,11 +172,14 @@ def _loop_validation(model, generator):
         loss, loss_box, loss_conf, loss_class, loss_each_img = loss_component(y_true, y_pred)
         find_highest_loss_each_class(loss_each_img, img_names, labels, highest_loss_dict)
 
-        loss_value += loss
-        loss_box_value += loss_box
-        loss_conf_value += loss_conf
-        loss_class_value += loss_class
+        loss_value += float(tf.cast(loss, tf.float32))
+        loss_box_value += float(tf.cast(loss_box, tf.float32))
+        loss_conf_value += float(tf.cast(loss_conf, tf.float32))
+        loss_class_value += float(tf.cast(loss_class, tf.float32))
 
+        tf.keras.backend.clear_session()
+        tf.set_random_seed(1)
+        gc.collect()
         del y_true, y_pred, yolo_1, yolo_2, yolo_3, img_names, labels, loss, loss_box, loss_conf, loss_class
 
     loss_value /= generator.steps_per_epoch
