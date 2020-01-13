@@ -19,7 +19,7 @@ def train_fn(model,
              num_epoches=500, 
              save_dir=None, 
              weight_name='weights',
-             num_warmups=0) -> 'train function':
+             num_warmups=5) -> 'train function':
     
     save_file = _setup(save_dir=save_dir, weight_name=weight_name)
     es = EarlyStopping(patience=15)
