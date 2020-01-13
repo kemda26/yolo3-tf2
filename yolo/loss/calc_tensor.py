@@ -15,7 +15,7 @@ def loss_fn(list_y_trues, list_y_preds,
             ignore_thresh=0.5, 
             grid_scale=1,
             obj_scale=5,
-            noobj_scale=2,
+            noobj_scale=0.5,
             xywh_scale=1,
             class_scale=1):
     
