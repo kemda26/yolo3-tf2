@@ -5,14 +5,14 @@ import tensorflow as tf
 def adjust_pred_tensor(y_pred):
 
     grid_offset = _create_mesh_xy(*y_pred.shape[:4])
-    
+    # print(grid_offset) # (batch, grid, grid, bbox, 2)
     pred_xy    = grid_offset + tf.sigmoid(y_pred[..., :2])            # sigma(t_xy) + c_xy
     pred_wh    = y_pred[..., 2:4]                                                       # t_wh
     pred_conf  = tf.sigmoid(y_pred[..., 4])                          # adjust confidence
     pred_classes = y_pred[..., 5:]                                              
     
     preds = tf.concat([pred_xy, pred_wh, tf.expand_dims(pred_conf, axis=-1), pred_classes], axis=-1)
-    print(preds.shape)
+    # print(preds.shape) # (batch, grid, grid, bbox, x,y,w,h,score + class)
     return preds
 
 def adjust_true_tensor(y_true):

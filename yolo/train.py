@@ -126,10 +126,14 @@ def _loop_train(model, optimizer, generator, epoch, learning_rate, warm_up, warm
 
 
 def _grad_fn(model, images_tensor, list_y_true) -> 'compute gradient & loss':
-    with tf.GradientTape() as tape:
+    with tf.GradientTape(watch_accessed_variables=False) as tape:
+        tape.watch(model.trainable_variables)
+
         list_y_pred = model(images_tensor)
         loss, loss_box, loss_conf, loss_class, _ = loss_fn(list_y_true, list_y_pred)
-    grads = tape.gradient(loss, model.trainable_variables)
+        tape.watch(loss)
+        with tape.stop_recording():
+            grads = tape.gradient(loss, model.trainable_variables)
     return grads, loss, loss_box, loss_conf, loss_class
 
 

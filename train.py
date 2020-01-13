@@ -19,7 +19,7 @@ if __name__ == '__main__':
     config_parser = ConfigParser(config)
 
     # 1. create generator
-    train_generator, valid_generator = config_parser.create_generator(split_train_valid=False)
+    train_generator, valid_generator = config_parser.create_generator(split_train_valid=True)
 
     # 2. create model
     model = config_parser.create_model()

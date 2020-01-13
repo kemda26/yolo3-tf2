@@ -10,9 +10,13 @@ class ResNet50(tf.keras.Model):
                                                             classes=10,
                                                             pooling=None)
                                                                     
-        self.feature_3 = self.net.get_layer('activation_21').output
-        self.feature_2 = self.net.get_layer('activation_39').output
-        self.feature_1 = self.net.get_layer('activation_48').output
+        # self.feature_3 = self.net.get_layer('activation_21').output
+        # self.feature_2 = self.net.get_layer('activation_39').output
+        # self.feature_1 = self.net.get_layer('activation_48').output
+
+        self.feature_3 = self.net.get_layer('add_6').output
+        self.feature_2 = self.net.get_layer('add_12').output
+        self.feature_1 = self.net.get_layer('add_15').output
 
         self.feature_extractor = tf.keras.Model(inputs=self.net.input, 
                                             outputs=[self.feature_3,
