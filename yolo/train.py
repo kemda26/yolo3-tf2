@@ -37,29 +37,30 @@ def train_fn(model,
     writer_2 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/train_loss' % current_time, flush_millis=10000)
 
     global_step = tf.Variable(0, trainable=False)
-    learning_rate = 1e-4
+    start_learning_rate = 1e-4
     optimizer = None
     warm_up_step = 1
-    # train_loss_box, train_loss_conf, train_loss_class = 0, 0 ,0
     for epoch in range(1, num_epoches + 1):
         warm_up = True if epoch <= num_warmups else False
         if not warm_up:
             # learning rate scheduler
-            learning_rate_fn = tf.train.exponential_decay(learning_rate=learning_rate, 
+            learning_rate_fn = tf.train.exponential_decay(learning_rate=start_learning_rate, 
                                                         global_step=global_step,
                                                         decay_steps=10,
                                                         decay_rate=0.8,
                                                         staircase=False)
+            learning_rate = learning_rate_fn()
             # optimizer = AdamWeightDecayOptimizer(learning_rate=learning_rate_fn(),
             #                                     weight_decay_rate=0.01)
-            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate_fn())
+            # optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate_fn())
             global_step.assign_add(1)
         else:
             print('Warm up...')
+            learning_rate = start_learning_rate
 
         # 1. update params
         print('Training...')
-        train_loss, train_loss_box, train_loss_conf, train_loss_class = _loop_train(model, optimizer, train_generator, num_warmups, learning_rate, warm_up, warm_up_step)
+        train_loss, train_loss_box, train_loss_conf, train_loss_class = _loop_train(model, train_generator, num_warmups, warm_up_step, warm_up, learning_rate=learning_rate)
         # train_loss = _loop_train(model, optimizer, train_generator, epoch, learning_rate, warm_up, warm_up_step)
 
         # 2. monitor validation loss
@@ -104,7 +105,7 @@ def train_fn(model,
         del train_loss, train_loss_box, train_loss_conf, train_loss_class, valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class
 
 
-def _loop_train(model, optimizer, generator, num_warmups, learning_rate, warm_up, warm_up_step) -> 'one epoch':
+def _loop_train(model, generator, num_warmups, warm_up_step, warm_up=False, learning_rate=1e-4) -> 'one epoch':
     n_steps = generator.steps_per_epoch
     total_steps = n_steps * num_warmups
     loss_value, loss_box_value, loss_conf_value, loss_class_value = 0.0, 0.0, 0.0, 0.0
@@ -129,18 +130,13 @@ def _loop_train(model, optimizer, generator, num_warmups, learning_rate, warm_up
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
             del warm_up_learning_rate
         else:
+            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
         tf.keras.backend.clear_session()
         tf.set_random_seed(1)
         gc.collect()
-        # context.context()._clear_caches()
-        # print(len(gc.get_objects()))
-        # print('Memory usage: {0}'.format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024))
-        # a = []
-        # for var, obj in globals().items():
-        #     a.append((var, sys.getsizeof(obj)))
-        # print(a)
+        
         del image_tensor, y_true, y_pred, yolo_1, yolo_2, yolo_3, grads, loss, loss_box, loss_conf, loss_class, optimizer, _
 
     loss_value /= generator.steps_per_epoch
