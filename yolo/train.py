@@ -17,7 +17,7 @@ from .eval.fscore import count_true_positives, calc_score
 
 def train_fn(model,
              train_generator, 
-             valid_generator=None, 
+             valid_generator=None,
              learning_rate=1e-4, 
              num_epoches=500, 
              save_dir=None, 

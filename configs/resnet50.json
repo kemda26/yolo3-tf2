@@ -24,7 +24,7 @@
         "learning_rate":        3e-5,
         "save_folder":          "weights/resnet50",
         "weight_name":          "resnet50",
-        "checkpoint_path":      "./tf_ckpts",
+        "checkpoint_path":         "./tf_ckpts",
         "jitter":               false
     }
 }
