@@ -1,19 +1,18 @@
 import tensorflow as tf
-config = tf.ConfigProto()
-config.gpu_options.allow_growth = True
-tf.enable_eager_execution(config=config)
-from tensorflow.python.eager import context
+tf_config = tf.ConfigProto()
+tf_config.gpu_options.allow_growth = True
+tf.enable_eager_execution(config=tf_config)
 # print(tf.executing_eagerly())
-import gc
-import os
-import h5py
+import gc, os, h5py, time, resource, sys, cv2
+import numpy as np
 from tqdm import tqdm
 from datetime import datetime, date
-import time, resource, sys
 
 from yolo.loss import loss_fn, loss_component
 from .utils.utils import EarlyStopping, Logger
-from yolo.optimizer import AdamWeightDecayOptimizer
+from .frontend import YoloDetector 
+from .eval.fscore import count_true_positives, calc_score
+# from yolo.optimizer import AdamWeightDecayOptimizer
 
 
 def train_fn(model,
@@ -23,8 +22,9 @@ def train_fn(model,
              num_epoches=500, 
              save_dir=None, 
              weight_name='weights',
-             num_warmups=5) -> 'train function':
-    
+             num_warmups=5,
+             configs=None) -> 'train function':
+    print(learning_rate)
     save_file = _setup(save_dir=save_dir, weight_name=weight_name)
     es = EarlyStopping(patience=10)
     history = []
@@ -37,46 +37,43 @@ def train_fn(model,
     writer_2 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/train_loss' % current_time, flush_millis=10000)
 
     global_step = tf.Variable(0, trainable=False)
-    start_learning_rate = 1e-4
-    optimizer = None
     warm_up_step = 1
     for epoch in range(1, num_epoches + 1):
         warm_up = True if epoch <= num_warmups else False
         if not warm_up:
             # learning rate scheduler
-            learning_rate_fn = tf.train.exponential_decay(learning_rate=start_learning_rate, 
+            learning_rate_fn = tf.train.exponential_decay(learning_rate=learning_rate, 
                                                         global_step=global_step,
                                                         decay_steps=10,
                                                         decay_rate=0.8,
                                                         staircase=False)
-            learning_rate = learning_rate_fn()
-            # optimizer = AdamWeightDecayOptimizer(learning_rate=learning_rate_fn(),
-            #                                     weight_decay_rate=0.01)
-            # optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate_fn())
+            lr = learning_rate_fn()
             global_step.assign_add(1)
         else:
             print('Warm up...')
-            learning_rate = start_learning_rate
+            lr = learning_rate
 
         # 1. update params
         print('Training...')
-        train_loss, train_loss_box, train_loss_conf, train_loss_class = _loop_train(model, train_generator, num_warmups, warm_up_step, warm_up, learning_rate=learning_rate)
-        # train_loss = _loop_train(model, optimizer, train_generator, epoch, learning_rate, warm_up, warm_up_step)
+        train_loss, train_loss_box, train_loss_conf, train_loss_class, train_fscore = _loop_train(model, train_generator, num_warmups, warm_up_step, warm_up, learning_rate=lr, configs=configs)
 
         # 2. monitor validation loss
         if valid_generator and valid_generator.steps_per_epoch != 0:
             print('Validating...')
-            valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class, highest_loss_dict = _loop_validation(model, valid_generator)
+            valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class, highest_loss_dict, valid_fscore = _loop_validation(model, valid_generator, configs=configs)
             logger.write_img(highest_loss_dict)
             del highest_loss_dict
         else:
+            valid_fscore = train_fscore
             valid_loss = train_loss # if no validation loss, use training loss as validation loss instead
             valid_loss_box, valid_loss_conf, valid_loss_class = train_loss_box, train_loss_conf, train_loss_class
 
         tensorboard_logger(writer_1, writer_2, train_loss, train_loss_box, train_loss_conf, train_loss_class, valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class, epoch)
         print('{}-th'.format(epoch))
         print('--> train_loss = {:.4f}, train_loss_box = {:.4f}, train_loss_conf = {:.4f}, train_loss_class = {:.4f}'.format(train_loss, train_loss_box, train_loss_conf, train_loss_class))
+        print('--> train_fscore: {}'.format(train_fscore))
         print('--> valid_loss = {:.4f}, valid_loss_box = {:.4f}, valid_loss_conf = {:.4f}, valid_loss_class = {:.4f}'.format(valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class))
+        print('--> valid_fscore: {}'.format(valid_fscore))
         logger.write({ 
             'train_loss': train_loss,
             'train_box': train_loss_box,
@@ -105,12 +102,14 @@ def train_fn(model,
         del train_loss, train_loss_box, train_loss_conf, train_loss_class, valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class
 
 
-def _loop_train(model, generator, num_warmups, warm_up_step, warm_up=False, learning_rate=1e-4) -> 'one epoch':
+def _loop_train(model, generator, num_warmups, warm_up_step, warm_up=False, learning_rate=1e-4, configs=None) -> 'one epoch':
     n_steps = generator.steps_per_epoch
     total_steps = n_steps * num_warmups
     loss_value, loss_box_value, loss_conf_value, loss_class_value = 0.0, 0.0, 0.0, 0.0
+    n_true_positives, n_truth, n_pred = 0, 0, 0
+
     for _ in tqdm(range(n_steps)):
-        image_tensor, yolo_1, yolo_2, yolo_3, _, _ = generator.next_batch()
+        image_tensor, yolo_1, yolo_2, yolo_3, anno_files, img_files, boxes, labels  = generator.next_batch()
         y_true = [yolo_1, yolo_2, yolo_3]
         y_pred = model(image_tensor)
         grads, loss = _grad_fn(model, image_tensor, y_true)
@@ -124,8 +123,6 @@ def _loop_train(model, generator, num_warmups, warm_up_step, warm_up=False, lear
         if warm_up:
             warm_up_learning_rate = (warm_up_step / total_steps) * learning_rate
             warm_up_step += 1
-            # optimizer = AdamWeightDecayOptimizer(learning_rate=warm_up_learning_rate,
-            #                                      weight_decay_rate=0.008)
             optimizer = tf.train.AdamOptimizer(learning_rate=warm_up_learning_rate)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
             del warm_up_learning_rate
@@ -133,18 +130,21 @@ def _loop_train(model, generator, num_warmups, warm_up_step, warm_up=False, lear
             optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
+        training_evaluate(configs, model, anno_files, img_files, boxes, labels, n_true_positives, n_truth, n_pred)
+
+        # prevent memory leak
         tf.keras.backend.clear_session()
         tf.set_random_seed(1)
         gc.collect()
-        
         del image_tensor, y_true, y_pred, yolo_1, yolo_2, yolo_3, grads, loss, loss_box, loss_conf, loss_class, optimizer, _
 
     loss_value /= generator.steps_per_epoch
     loss_box_value /= generator.steps_per_epoch 
     loss_conf_value /= generator.steps_per_epoch
     loss_class_value /= generator.steps_per_epoch
+    fscore = calc_score(n_true_positives, n_truth, n_pred)
 
-    return loss_value, loss_box_value, loss_conf_value, loss_class_value
+    return loss_value, loss_box_value, loss_conf_value, loss_class_value, fscore
 
 
 def _grad_fn(model, images_tensor, list_y_true, list_y_pred=None) -> 'compute gradient & loss':
@@ -156,34 +156,40 @@ def _grad_fn(model, images_tensor, list_y_true, list_y_pred=None) -> 'compute gr
     return grads, loss
 
 
-def _loop_validation(model, generator):
+def _loop_validation(model, generator, configs=None):
     # one epoch
     n_steps = generator.steps_per_epoch
     loss_value, loss_box_value, loss_conf_value, loss_class_value = 0.0, 0.0, 0.0, 0.0
     highest_loss_dict = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] }
+    n_true_positives, n_truth, n_pred = 0, 0, 0
+
     for _ in tqdm(range(n_steps)):
-        image_tensor, yolo_1, yolo_2, yolo_3, img_names, labels = generator.next_batch()
+        image_tensor, yolo_1, yolo_2, yolo_3, anno_files, img_files, boxes, labels = generator.next_batch()
         y_true = [yolo_1, yolo_2, yolo_3]
         y_pred = model(image_tensor)
         loss, loss_box, loss_conf, loss_class, loss_each_img = loss_component(y_true, y_pred)
-        find_highest_loss_each_class(loss_each_img, img_names, labels, highest_loss_dict)
+        find_highest_loss_each_class(loss_each_img, img_files, labels, highest_loss_dict)
 
         loss_value += float(tf.cast(loss, tf.float32))
         loss_box_value += float(tf.cast(loss_box, tf.float32))
         loss_conf_value += float(tf.cast(loss_conf, tf.float32))
         loss_class_value += float(tf.cast(loss_class, tf.float32))
 
+        training_evaluate(configs, model, anno_files, img_files, boxes, labels, n_true_positives, n_truth, n_pred)
+
+        #
         tf.keras.backend.clear_session()
         tf.set_random_seed(1)
         gc.collect()
-        del y_true, y_pred, yolo_1, yolo_2, yolo_3, img_names, labels, loss, loss_box, loss_conf, loss_class
+        del y_true, y_pred, yolo_1, yolo_2, yolo_3, img_files, labels, loss, loss_box, loss_conf, loss_class
 
     loss_value /= generator.steps_per_epoch
     loss_box_value /= generator.steps_per_epoch
     loss_conf_value /= generator.steps_per_epoch
     loss_class_value /= generator.steps_per_epoch
+    fscore = calc_score(n_true_positives, n_truth, n_pred)
     
-    return loss_value, loss_box_value, loss_conf_value, loss_class_value, highest_loss_dict
+    return loss_value, loss_box_value, loss_conf_value, loss_class_value, highest_loss_dict, fscore
 
 
 def _setup(save_dir, weight_name='weights'):
@@ -205,7 +211,6 @@ def _save_weights(model, filename):
 
 
 def tensorboard_logger(writer_1, writer_2, train_loss, train_loss_box, train_loss_conf, train_loss_class, valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class, idx):
-
     with writer_1.as_default(), tf.contrib.summary.always_record_summaries():
         tf.contrib.summary.scalar('loss', valid_loss, step=idx)
         tf.contrib.summary.scalar('loss_box', valid_loss_box, step=idx)
@@ -224,9 +229,9 @@ def tensorboard_logger(writer_1, writer_2, train_loss, train_loss_box, train_los
 def key_sort(value):
     return value[0]
 
-def find_highest_loss_each_class(loss_each_img, img_names, list_labels, class_dict):
+def find_highest_loss_each_class(loss_each_img, img_files, list_labels, class_dict):
     losses = list(loss_each_img.numpy())
-    for loss, img_name, labels in zip(losses, img_names, list_labels):
+    for loss, img_name, labels in zip(losses, img_files, list_labels):
         for label in labels:
             class_dict[label].append(( loss, img_name, labels ))
     for key, img_list in class_dict.items():
@@ -234,6 +239,22 @@ def find_highest_loss_each_class(loss_each_img, img_names, list_labels, class_di
         img_list = img_list[:10]
         class_dict[key] = img_list
 
+
+def training_evaluate(configs, model, anno_files, img_files, boxes, labels, n_true_positives, n_truth, n_pred):
+    # print(anno_files)
+    # print(img_files)
+    # print(boxes)
+    # print(labels)
+    detector = configs.create_detector(model)
+    for anno_file, img_file, true_boxes, true_labels in zip(anno_files, img_files, boxes, labels):
+        true_labels = np.array(true_labels)
+        image = cv2.imread(img_file)[:,:,::-1]
+
+        pred_boxes, pred_labels, pred_probs = detector.detect(image, cls_threshold=0.5)
+        n_true_positives += count_true_positives(pred_boxes, true_boxes, pred_labels, true_labels)
+        n_truth += len(true_boxes)
+        n_pred += len(pred_boxes)
+    
 
 if __name__ == '__main__':
     pass

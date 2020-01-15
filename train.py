@@ -18,8 +18,8 @@ if __name__ == '__main__':
     config = args.config
     config_parser = ConfigParser(config)
 
-    split_train_valid = config_parser.split_train_val()
     # 1. create generator
+    split_train_valid = config_parser.split_train_val()
     train_generator, valid_generator = config_parser.create_generator(split_train_valid=split_train_valid)
 
     # 2. create model
@@ -33,5 +33,6 @@ if __name__ == '__main__':
             learning_rate=learning_rate,
             save_dir=save_dir,
             weight_name=weight_name,
-            num_epoches=n_epoches)
+            num_epoches=n_epoches,
+            configs=config_parser)
 

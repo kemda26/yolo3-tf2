@@ -63,23 +63,28 @@ class BatchGenerator(object):
         # self._net_size = self.min_net_size
 
     def next_batch(self):
-        if self._epoch >= 5:
-            self._update_net_size()
+        # if self._epoch >= 5:
+            # self._update_net_size()
 
         x_batch   = []
         y1_batch  = []
         y2_batch  = []
         y3_batch  = []
-        img_names = []
-        labels    = []
+        anno_files = []
+        img_files = []
+        boxes = []
+        labels = []
         for _ in range(self.batch_size):
-            x, y1, y2, y3, img_name, label = self._get()
-            # x, y1, y2, y3 = self._get()
+            anno_file = self.ann_fnames[self._index]
+            x, y1, y2, y3, img_file, box, label = self._get()
+            
             x_batch.append(x)
             y1_batch.append(y1)
             y2_batch.append(y2)
             y3_batch.append(y3)
-            img_names.append(img_name)
+            anno_files.append(anno_file)
+            img_files.append(img_file)
+            boxes.append(box)
             labels.append(label)
         
         if self._end_epoch == True:
@@ -92,7 +97,9 @@ class BatchGenerator(object):
                np.array(y1_batch).astype(np.float32), \
                np.array(y2_batch).astype(np.float32), \
                np.array(y3_batch).astype(np.float32), \
-               img_names, \
+               anno_files, \
+               img_files, \
+               boxes, \
                labels
 
     def _get(self):
@@ -102,6 +109,7 @@ class BatchGenerator(object):
         # 1. get input file & its annotation
         fname, boxes, coded_labels = parse_annotation(self.ann_fnames[self._index], self.img_dir, self.lable_names)
         # print(fname)
+        # print(boxes)
         # print(coded_labels)
 
         # 2. read image in fixed size
@@ -121,7 +129,7 @@ class BatchGenerator(object):
             self._index = 0
             self._end_epoch = True
         
-        return normalize(img), list_ys[2], list_ys[1], list_ys[0], fname, coded_labels
+        return normalize(img), list_ys[2], list_ys[1], list_ys[0], fname, boxes, coded_labels
         # return normalize(img), list_ys[2], list_ys[1], list_ys[0]
 
 

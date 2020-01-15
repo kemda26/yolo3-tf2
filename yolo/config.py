@@ -56,11 +56,6 @@ class ConfigParser(object):
         return model
 
 
-    def create_detector(self, model):
-        d = YoloDetector(model, self._model_config['anchors'], net_size=self._model_config['net_size'])
-        return d
-
-
     def create_generator(self, split_train_valid=False):
         train_ann_fnames = self._get_train_anns()
         valid_ann_fnames = self._get_valid_anns()
@@ -99,6 +94,10 @@ class ConfigParser(object):
         print('Training samples : {}, Validation samples : {}'.format(len(train_ann_fnames), len(valid_ann_fnames)))
         return train_generator, valid_generator
 
+
+    def create_detector(self, model):
+        detector = YoloDetector(model, self._model_config['anchors'], net_size=self._model_config['net_size'])
+        return detector
 
     def create_evaluator(self, model):
 

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import cv2
 import os
 import numpy as np
@@ -10,20 +8,19 @@ from yolo.dataset.annotation import parse_annotation
 from yolo.eval.fscore import count_true_positives, calc_score
 
 
-
 class Evaluator(object):
-    def __init__(self, yolo_detector, class_labels, ann_fnames, img_dname):
+    def __init__(self, yolo_detector, class_labels, ann_fnames, img_dirname):
         self._detector = yolo_detector
         self._cls_labels = class_labels
         self._ann_fnames = ann_fnames
-        self._img_dname = img_dname
+        self._img_dirname = img_dirname
     
     def run(self, threshold=0.5, save_dname=None):
         n_true_positives = 0
         n_truth = 0
         n_pred = 0
         for ann_fname in tqdm(self._ann_fnames):
-            img_fname, true_boxes, true_labels = parse_annotation(ann_fname, self._img_dname, self._cls_labels)
+            img_fname, true_boxes, true_labels = parse_annotation(ann_fname, self._img_dirname, self._cls_labels)
             true_labels = np.array(true_labels)
             image = cv2.imread(img_fname)[:,:,::-1]
     

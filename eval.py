@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import tensorflow as tf
 import argparse
 
@@ -8,7 +7,7 @@ argparser = argparse.ArgumentParser(
 argparser.add_argument(
     '-c',
     '--config',
-    default="configs/svhn.json",
+    default="configs/test.json",
     help='config file')
 
 argparser.add_argument(
