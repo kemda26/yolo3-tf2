@@ -183,7 +183,7 @@ def _find_match_anchor(box, anchor_boxes):
     max_anchor = anchor_boxes[max_index]
 
     scale_index = max_index // 3
-    box_index = max_index%3
+    box_index = max_index % 3
     return max_anchor, scale_index, box_index
 
 

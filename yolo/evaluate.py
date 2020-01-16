@@ -6,6 +6,7 @@ from tqdm import tqdm
 from yolo.utils.box import draw_boxes
 from yolo.dataset.annotation import parse_annotation
 from yolo.eval.fscore import count_true_positives, calc_score
+from datetime import datetime
 
 
 class Evaluator(object):
@@ -20,16 +21,16 @@ class Evaluator(object):
         n_truth = 0
         n_pred = 0
         for ann_fname in tqdm(self._ann_fnames):
+            # start = datetime.now()
             img_fname, true_boxes, true_labels = parse_annotation(ann_fname, self._img_dirname, self._cls_labels)
             true_labels = np.array(true_labels)
             image = cv2.imread(img_fname)[:,:,::-1]
-    
             boxes, labels, probs = self._detector.detect(image, threshold)
-            
             n_true_positives += count_true_positives(boxes, true_boxes, labels, true_labels)
             n_truth += len(true_boxes)
             n_pred += len(boxes)
             
+            # print(datetime.now() - start)
             if save_dname:
                 self._save_img(save_dname, img_fname, image, boxes, labels, probs)
         return calc_score(n_true_positives, n_truth, n_pred)

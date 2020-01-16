@@ -247,6 +247,7 @@ def training_evaluate(configs, model, anno_files, img_files, boxes, labels, n_tr
     # print(labels)
     detector = configs.create_detector(model)
     for anno_file, img_file, true_boxes, true_labels in zip(anno_files, img_files, boxes, labels):
+        start = datetime.now()
         print('image loaded')
         true_labels = np.array(true_labels)
         image = cv2.imread(img_file)[:,:,::-1]
@@ -255,7 +256,8 @@ def training_evaluate(configs, model, anno_files, img_files, boxes, labels, n_tr
         n_true_positives += count_true_positives(pred_boxes, true_boxes, pred_labels, true_labels)
         n_truth += len(true_boxes)
         n_pred += len(pred_boxes)
-    
+
+        print(datetime.now() - start)    
 
 if __name__ == '__main__':
     pass
