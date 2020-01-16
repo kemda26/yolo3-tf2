@@ -24,7 +24,6 @@ def train_fn(model,
              weight_name='weights',
              num_warmups=5,
              configs=None) -> 'train function':
-    print(learning_rate)
     save_file = _setup(save_dir=save_dir, weight_name=weight_name)
     es = EarlyStopping(patience=10)
     history = []
@@ -247,17 +246,23 @@ def training_evaluate(configs, model, anno_files, img_files, boxes, labels, n_tr
     # print(labels)
     detector = configs.create_detector(model)
     for anno_file, img_file, true_boxes, true_labels in zip(anno_files, img_files, boxes, labels):
-        start = datetime.now()
         print('image loaded')
+        s1 = datetime.now()
         true_labels = np.array(true_labels)
+        print('numpy array true labels: ', datetime.now() - s1)
+        s2 = datetime.now()
         image = cv2.imread(img_file)[:,:,::-1]
-
+        print('read image : ', datetime.now() - s2)
+        s3 = datetime.now()
         pred_boxes, pred_labels, pred_probs = detector.detect(image, cls_threshold=0.5)
+        print('detect : ', datetime.now() - s3)
+        s4 = datetime.now()
         n_true_positives += count_true_positives(pred_boxes, true_boxes, pred_labels, true_labels)
         n_truth += len(true_boxes)
         n_pred += len(pred_boxes)
+        print('count time: ', datetime.now() - s4)
 
-        print(datetime.now() - start)    
+        print('total 1 loop: ',datetime.now() - s1)    
 
 if __name__ == '__main__':
     pass
