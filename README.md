@@ -1,3 +1,3 @@
 # To-do list:
-- [ ] Compute fscore each  training epoch
-- [ ] Save highest loss images
+- [ ] Compute fscore each  training epoch (Work in progress)
+- [ ] Save highest loss images (WIP)
