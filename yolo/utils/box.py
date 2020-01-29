@@ -80,14 +80,15 @@ def nms_boxes(boxes, nms_threshold=0.3, obj_threshold=0.3):
     if len(boxes) == 0:
         return boxes
     # suppress non-maximal boxes
+    s0 = datetime.now()
+    boxes = [box for box in boxes if box.get_score() > obj_threshold]
+    print('threshold box: ', datetime.now() - s0)
+    
     s1 = datetime.now()
     n_classes = len(boxes[0].classes)
-    print('number of classes: ', n_classes)
     for c in range(n_classes):
         s2 = datetime.now()
         sorted_indices = list(reversed(np.argsort([box.classes[c] for box in boxes])))
-        if c == 0:
-            print('sort time: ', datetime.now() - s2)
 
         for i in range(len(sorted_indices)):
             sloop = datetime.now()
@@ -107,11 +108,11 @@ def nms_boxes(boxes, nms_threshold=0.3, obj_threshold=0.3):
         if c == 0:
             print('1 loop time: ', datetime.now() - s2)
     # remove the boxes which are less likely than a obj_threshold
-    boxes = [box for box in boxes if box.get_score() > obj_threshold]
+    # boxes = [box for box in boxes if box.get_score() > obj_threshold]
     print('total non-max: ', datetime.now() - s1)
     return boxes
 
-#         image = draw_boxes(image, boxes, labels, probs, class_labels=config["model"]["labels"])
+# image = draw_boxes(image, boxes, labels, probs, class_labels=config["model"]["labels"])
 def draw_boxes(image, boxes, labels, probs, class_labels, obj_thresh=0.0, desired_size=None):
     """
     # Args
