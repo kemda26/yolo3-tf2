@@ -249,20 +249,17 @@ def training_evaluate(configs, model, anno_files, img_files, boxes, labels, n_tr
         print('image loaded')
         s1 = datetime.now()
         true_labels = np.array(true_labels)
-        print('numpy array true labels: ', datetime.now() - s1)
-        s2 = datetime.now()
         image = cv2.imread(img_file)[:,:,::-1]
-        print('read image : ', datetime.now() - s2)
+
         s3 = datetime.now()
         pred_boxes, pred_labels, pred_probs = detector.detect(image, cls_threshold=0.5)
         print('detect : ', datetime.now() - s3)
-        s4 = datetime.now()
+
         n_true_positives += count_true_positives(pred_boxes, true_boxes, pred_labels, true_labels)
         n_truth += len(true_boxes)
         n_pred += len(pred_boxes)
-        print('count time: ', datetime.now() - s4)
 
-        print('total 1 loop: ',datetime.now() - s1)    
+        print('total 1 loop: ', datetime.now() - s1)    
 
 if __name__ == '__main__':
     pass

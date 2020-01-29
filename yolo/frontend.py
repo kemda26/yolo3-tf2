@@ -5,7 +5,7 @@ import numpy as np
 from yolo.post_proc.decoder import postprocess_ouput
 from yolo.net.yolonet import preprocess_input
 from yolo.utils.box import boxes_to_array, to_minmax
-
+from datetime import datetime
 
 class YoloDetector(object):
     
@@ -27,13 +27,17 @@ class YoloDetector(object):
             probs : array, shape of (N,)
         """
         image_h, image_w, _ = image.shape
+        s1 = datetime.now()
         new_image = preprocess_input(image, self._net_size)
-        
+        print('preprocess', datetime.now() - s1)
         # 3. predict
+        s2 = datetime.now()
         yolos = self._model.predict(new_image)
-        
+        print('predict', datetime.now() - s2)
+
+        s3 = datetime.now()
         boxes_ = postprocess_ouput(yolos, self._anchors, self._net_size, image_h, image_w)
-        
+        print('postprocess', datetime.now() - s3)
         if len(boxes_) > 0:
             boxes, probs = boxes_to_array(boxes_)
             boxes = to_minmax(boxes)
@@ -44,5 +48,6 @@ class YoloDetector(object):
             probs = probs[probs >= cls_threshold]
         else:
             boxes, labels, probs = [], [], []
+        print('total', datetime.now() - s1)
         return boxes, labels, probs
 

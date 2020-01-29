@@ -25,7 +25,9 @@ class Evaluator(object):
             img_fname, true_boxes, true_labels = parse_annotation(ann_fname, self._img_dirname, self._cls_labels)
             true_labels = np.array(true_labels)
             image = cv2.imread(img_fname)[:,:,::-1]
+
             boxes, labels, probs = self._detector.detect(image, threshold)
+            
             n_true_positives += count_true_positives(boxes, true_boxes, labels, true_labels)
             n_truth += len(true_boxes)
             n_pred += len(boxes)
