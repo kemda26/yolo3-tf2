@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
-
 import numpy as np
 import cv2
-
+from datetime import datetime
 
 def correct_yolo_boxes(boxes, image_h, image_w):
     """
@@ -78,14 +76,21 @@ def nms_boxes(boxes, nms_threshold=0.3, obj_threshold=0.3):
         boxes : list of BoundBox
             non maximum supressed BoundBox instances
     """
+    print('number of boxes: ', len(boxes))
     if len(boxes) == 0:
         return boxes
     # suppress non-maximal boxes
+    s1 = datetime.now()
     n_classes = len(boxes[0].classes)
+    print('number of classes: ', n_classes)
     for c in range(n_classes):
+        s2 = datetime.now()
         sorted_indices = list(reversed(np.argsort([box.classes[c] for box in boxes])))
+        if c == 0:
+            print('sort time: ', datetime.now() - s2)
 
         for i in range(len(sorted_indices)):
+            sloop = datetime.now()
             index_i = sorted_indices[i]
             
             if boxes[index_i].classes[c] == 0: 
@@ -96,8 +101,14 @@ def nms_boxes(boxes, nms_threshold=0.3, obj_threshold=0.3):
 
                     if boxes[index_i].iou(boxes[index_j]) >= nms_threshold:
                         boxes[index_j].classes[c] = 0
+            if c == 0 and i == 0:
+                print('sloop: ', datetime.now() - sloop)
+
+        if c == 0:
+            print('1 loop time: ', datetime.now() - s2)
     # remove the boxes which are less likely than a obj_threshold
     boxes = [box for box in boxes if box.get_score() > obj_threshold]
+    print('total non-max: ', datetime.now() - s1)
     return boxes
 
 #         image = draw_boxes(image, boxes, labels, probs, class_labels=config["model"]["labels"])

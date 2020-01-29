@@ -6,7 +6,7 @@ from tqdm import tqdm
 from yolo.utils.box import draw_boxes
 from yolo.dataset.annotation import parse_annotation
 from yolo.eval.fscore import count_true_positives, calc_score
-from datetime import datetime
+# from datetime import datetime
 
 
 class Evaluator(object):
