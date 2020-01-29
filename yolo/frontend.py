@@ -29,11 +29,11 @@ class YoloDetector(object):
         image_h, image_w, _ = image.shape
         s1 = datetime.now()
         new_image = preprocess_input(image, self._net_size)
-        print('preprocess', datetime.now() - s1)
+        # print('preprocess', datetime.now() - s1)
         # 3. predict
-        s2 = datetime.now()
+        # s2 = datetime.now()
         yolos = self._model.predict(new_image)
-        print('predict', datetime.now() - s2)
+        # print('predict', datetime.now() - s2)
 
         s3 = datetime.now()
         boxes_ = postprocess_ouput(yolos, self._anchors, self._net_size, image_h, image_w)

@@ -2,6 +2,7 @@
 
 import numpy as np
 from yolo.utils.box import BoundBox, nms_boxes, correct_yolo_boxes
+from datetime import datetime
 
 IDX_X = 0
 IDX_Y = 1
@@ -22,17 +23,21 @@ def postprocess_ouput(yolos, anchors, net_size, image_h, image_w, obj_thresh=0.5
     boxes = []
     
     # 1. decode the output of the network
+    s1 = datetime.now()
     for i in range(len(yolos)):
         boxes += decode_netout(yolos[i][0], anchors[3-(i+1)], obj_thresh, net_size)
         # print('---')
-    # print(len(boxes))    
+    # print(len(boxes))
+    print('decode_netout', datetime.now() - s1)    
 
     # 2. correct box-scale to image size
+    s2 = datetime.now()
     correct_yolo_boxes(boxes, image_h, image_w)
-
+    print('correct', datetime.now() - s2)
     # 3. suppress non-maximal boxes
+    s3 = datetime.now()
     nms_boxes(boxes, nms_thresh)
-
+    print('non-max', datetime.now() - s3)
     return boxes
 
 

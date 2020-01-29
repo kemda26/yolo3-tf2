@@ -19,3 +19,5 @@ o.txt
 .comet.config
 weights
 datasets
+log-files
+logs-tensorboard
