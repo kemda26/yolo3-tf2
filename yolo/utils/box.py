@@ -12,7 +12,6 @@ def correct_yolo_boxes(boxes, image_h, image_w):
             ([0, image_h], [0, image_w]) - scaled box
     """
     for i in range(len(boxes)):
-
         boxes[i].x = int(boxes[i].x * image_w)
         boxes[i].w = int(boxes[i].w * image_w)
         boxes[i].y = int(boxes[i].y * image_h)
@@ -79,36 +78,30 @@ def nms_boxes(boxes, nms_threshold=0.3, obj_threshold=0.3):
     print('number of boxes: ', len(boxes))
     if len(boxes) == 0:
         return boxes
-    # suppress non-maximal boxes
-    s0 = datetime.now()
+
     boxes = [box for box in boxes if box.get_score() > obj_threshold]
-    print('threshold box: ', datetime.now() - s0)
-    
+    print('reduced boxes: ', len(boxes))
+    # suppress non-maximal boxes
     s1 = datetime.now()
     n_classes = len(boxes[0].classes)
     for c in range(n_classes):
-        s2 = datetime.now()
         sorted_indices = list(reversed(np.argsort([box.classes[c] for box in boxes])))
 
         for i in range(len(sorted_indices)):
-            sloop = datetime.now()
             index_i = sorted_indices[i]
             
-            if boxes[index_i].classes[c] == 0: 
+            if boxes[index_i].classes[c] == 0:
                 continue
             else:
-                for j in range(i+1, len(sorted_indices)):
+                for j in range(i + 1, len(sorted_indices)):
                     index_j = sorted_indices[j]
 
                     if boxes[index_i].iou(boxes[index_j]) >= nms_threshold:
                         boxes[index_j].classes[c] = 0
-            if c == 0 and i == 0:
-                print('sloop: ', datetime.now() - sloop)
-
-        if c == 0:
-            print('1 loop time: ', datetime.now() - s2)
+                        
     # remove the boxes which are less likely than a obj_threshold
-    # boxes = [box for box in boxes if box.get_score() > obj_threshold]
+    boxes = [box for box in boxes if box.get_score() > obj_threshold]
+    print('result boxes: ', len(boxes))
     print('total non-max: ', datetime.now() - s1)
     return boxes
 

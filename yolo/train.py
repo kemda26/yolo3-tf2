@@ -27,7 +27,7 @@ def train_fn(model,
     save_file = _setup(save_dir=save_dir, weight_name=weight_name)
     es = EarlyStopping(patience=10)
     history = []
-    current_time = date.today().strftime('%d-%m-%Y_') + datetime.now().strftime('%H:%M:%S')
+    current_time = date.today().strftime('%d_%m_%Y-') + datetime.now().strftime('%H_%M_%S')
 
     logger = Logger('resnet50', current_time)
     print('---Logged Files')
