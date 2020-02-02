@@ -12,7 +12,7 @@ class YoloDetector(object):
         self._anchors = anchors
         self._net_size = net_size
         
-    def detect(self, image, cls_threshold=0.0):
+    def detect(self, image, cls_threshold=0.0, nms_threshold=0.5):
         """
         # Args
             image : array, shape of (H, W, 3)
@@ -29,7 +29,7 @@ class YoloDetector(object):
         # 3. predict
         yolos = self._model.predict(new_image)
 
-        boxes_ = postprocess_ouput(yolos, self._anchors, self._net_size, image_h, image_w)
+        boxes_ = postprocess_ouput(yolos, self._anchors, self._net_size, image_h, image_w, nms_thresh=nms_threshold)
         if len(boxes_) > 0:
             boxes, probs = boxes_to_array(boxes_)
             boxes = to_minmax(boxes)

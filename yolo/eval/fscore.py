@@ -31,7 +31,7 @@ def calc_score(n_true_positives, n_truth, n_pred):
     if precision + recall == 0:
         fscore = 0
     else:
-        fscore = 2* precision * recall / (precision + recall)
+        fscore = 2 * precision * recall / (precision + recall)
     score = {"fscore": fscore, "precision": precision, "recall": recall}
     return score
     

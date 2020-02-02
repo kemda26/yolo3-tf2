@@ -99,13 +99,13 @@ class EarlyStopping(object):
 
 class Logger(object):
     """ Simple training logger: saves to file and optionally prints to stdout """
-    def __init__(self, logname, now):
+    def __init__(self, path):
         """
         Args:
             logname: name for log (e.g. 'Hopper-v1')
-            now: unique sub-directory name (e.g. date/time string)
+            time: unique sub-directory name (e.g. date/time string)
         """
-        path = os.path.join('log-files', logname, now)
+        # path = os.path.join('log-files', logname, time)
         os.makedirs(path)
         folders = [('','*.py'), ('yolo/net/','*.py'), ('configs/','*')]
         filenames = glob.glob('*.py') + glob.glob('yolo/net/*.py') + glob.glob('configs/*')  # put copy of all python files in log_dir

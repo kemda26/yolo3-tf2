@@ -13,7 +13,7 @@
     "train" : {
         "min_size":             224,
         "max_size":             224,
-        "num_epoch":            5,
+        "num_epoch":            50,
         "split_train_valid":    true,
         "train_image_folder":   "tests/dataset/svhn/imgs",
         "train_annot_folder":   "tests/dataset/svhn/anns",
@@ -26,6 +26,7 @@
         "save_folder":          "weights/test",
         "weight_name":          "resnet50",
         "checkpoint_path":      "./tf_ckpts",
-        "jitter":               false
+        "jitter":               false,
+        "save_image_number":    10
     }
 }

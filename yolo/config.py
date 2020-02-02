@@ -146,5 +146,9 @@ class ConfigParser(object):
         ann_fnames = glob.glob(os.path.join(self._train_config['test_annot_folder'], '*.xml'))
         return ann_fnames
 
+
+    def get_save_image_number(self):
+        return self._train_config['save_image_number']
+
     def split_train_val(self):
         return self._train_config['split_train_valid']

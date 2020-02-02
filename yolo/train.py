@@ -29,8 +29,9 @@ def train_fn(model,
     es = EarlyStopping(patience=10)
     history = []
     current_time = date.today().strftime('%d_%m_%Y-') + datetime.now().strftime('%H_%M_%S')
-
-    logger = Logger('resnet50', current_time)
+    
+    log_path = os.path.join('log-files', 'resnet50', current_time) # folder, backbone, time
+    logger = Logger(log_path)
     print('---Logged Files')
 
     writer_1 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/valid_loss' % current_time, flush_millis=10000)
@@ -62,7 +63,7 @@ def train_fn(model,
             print('Validating...')
             valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class, highest_loss_imgs, valid_fscore = _loop_validation(model, valid_generator, configs=configs, epoch=epoch)
             logger.write_img(highest_loss_imgs)
-            save_images(configs, model, highest_loss_imgs, epoch)
+            save_images(log_path, configs, model, highest_loss_imgs, epoch)
             del highest_loss_imgs
         else:
             valid_fscore = train_fscore
@@ -72,9 +73,9 @@ def train_fn(model,
         tensorboard_logger(writer_1, writer_2, train_loss, train_loss_box, train_loss_conf, train_loss_class, valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class, epoch)
         print('{}-th'.format(epoch))
         print('--> train_loss = {:.4f}, train_loss_box = {:.4f}, train_loss_conf = {:.4f}, train_loss_class = {:.4f}'.format(train_loss, train_loss_box, train_loss_conf, train_loss_class))
-        print('--> train_fscore: {}'.format(train_fscore))
+        print('    train_fscore = {:.4f}, precision = {:.4f}, recall = {:.4f}'.format(train_fscore['fscore'], train_fscore['precision'], train_fscore['recall']))
         print('--> valid_loss = {:.4f}, valid_loss_box = {:.4f}, valid_loss_conf = {:.4f}, valid_loss_class = {:.4f}'.format(valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class))
-        print('--> valid_fscore: {}'.format(valid_fscore))
+        print('    valid_fscore = {:.4f}, precision = {:.4f}, recall = {:.4f}'.format(valid_fscore['fscore'], valid_fscore['precision'], valid_fscore['recall']))
         logger.write({ 
             'train_loss': train_loss,
             'train_box': train_loss_box,
@@ -84,6 +85,8 @@ def train_fn(model,
             'valid_box': valid_loss_box,
             'valid_conf': valid_loss_conf,
             'valid_class': valid_loss_class,
+            'train_fscore': train_fscore['fscore'],
+            'valid_fscore': valid_fscore['fscore']
         }, display=False)
         
         # 3. save weights
@@ -132,7 +135,10 @@ def _loop_train(model, generator, num_warmups, warm_up_step, warm_up=False, lear
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
         if epoch % 5 == 0:
-            calculate_fscore(configs, model, anno_files, img_files, boxes, labels, n_true_positives, n_truth, n_pred)
+            true_pos, truth, pred = calculate_fscore(configs, model, anno_files, img_files, boxes, labels)
+            n_true_positives += true_pos
+            n_truth += truth
+            n_pred += pred
 
         # prevent memory leak
         tf.keras.backend.clear_session()
@@ -141,7 +147,7 @@ def _loop_train(model, generator, num_warmups, warm_up_step, warm_up=False, lear
         del image_tensor, y_true, y_pred, yolo_1, yolo_2, yolo_3, grads, loss, loss_box, loss_conf, loss_class, optimizer, _
 
     loss_value /= generator.steps_per_epoch
-    loss_box_value /= generator.steps_per_epoch 
+    loss_box_value /= generator.steps_per_epoch
     loss_conf_value /= generator.steps_per_epoch
     loss_class_value /= generator.steps_per_epoch
     fscore = calc_score(n_true_positives, n_truth, n_pred)
@@ -170,7 +176,7 @@ def _loop_validation(model, generator, configs=None, epoch=None):
         y_true = [yolo_1, yolo_2, yolo_3]
         y_pred = model(image_tensor)
         loss, loss_box, loss_conf, loss_class, loss_each_img = loss_component(y_true, y_pred)
-        find_highest_loss_each_class(loss_each_img, img_files, labels, highest_loss_imgs, epoch=epoch)
+        find_highest_loss_each_class(configs, loss_each_img, img_files, labels, highest_loss_imgs, epoch=epoch)
 
         loss_value += float(tf.cast(loss, tf.float32))
         loss_box_value += float(tf.cast(loss_box, tf.float32))
@@ -178,7 +184,10 @@ def _loop_validation(model, generator, configs=None, epoch=None):
         loss_class_value += float(tf.cast(loss_class, tf.float32))
 
         if epoch % 5 == 0:
-            calculate_fscore(configs, model, anno_files, img_files, boxes, labels, n_true_positives, n_truth, n_pred)
+            true_pos, truth, pred = calculate_fscore(configs, model, anno_files, img_files, boxes, labels)
+            n_true_positives += true_pos
+            n_truth += truth
+            n_pred += pred
 
         # prevent memory leak
         tf.keras.backend.clear_session()
@@ -232,8 +241,8 @@ def tensorboard_logger(writer_1, writer_2, train_loss, train_loss_box, train_los
 def key_sort(value):
     return value[0]
 
-def find_highest_loss_each_class(loss_each_img, img_files, list_labels, class_dict, epoch=None):
-    number_of_images = 10
+def find_highest_loss_each_class(configs, loss_each_img, img_files, list_labels, class_dict, epoch=None):
+    number_of_images = configs.get_save_image_number()
     losses = list(loss_each_img.numpy())
     for loss, img_name, labels in zip(losses, img_files, list_labels):
         for label in labels:
@@ -248,26 +257,29 @@ def find_highest_loss_each_class(loss_each_img, img_files, list_labels, class_di
         class_dict[label] = img_list
 
 
-def calculate_fscore(configs, model, anno_files, img_files, boxes, labels, n_true_positives, n_truth, n_pred):
+def calculate_fscore(configs, model, anno_files, img_files, boxes, labels):
     detector = configs.create_detector(model)
+    n_true_positives, n_truth, n_pred = 0, 0, 0
     for anno_file, img_file, true_boxes, true_labels in zip(anno_files, img_files, boxes, labels):
         true_labels = np.array(true_labels)
         image = cv2.imread(img_file)[:,:,::-1]
 
-        pred_boxes, pred_labels, pred_probs = detector.detect(image, cls_threshold=0.5)
+        pred_boxes, pred_labels, pred_probs = detector.detect(image, cls_threshold=0.5, nms_threshold=0.3)
 
         n_true_positives += count_true_positives(pred_boxes, true_boxes, pred_labels, true_labels)
         n_truth += len(true_boxes)
         n_pred += len(pred_boxes)
 
+    return n_true_positives, n_truth, n_pred
 
-def save_images(configs, model, data, epoch) -> 'dictionary':
+
+def save_images(log_path, configs, model, data, epoch) -> 'dictionary':
     class_labels = configs._model_config['labels']
     detector = configs.create_detector(model)
-    folder_name = os.path.join('save_imgs', 'epoch_' + str(epoch))
+    folder_name = os.path.join(log_path, 'save_images', 'epoch_' + str(epoch))
+
     for label, values in data.items():
         save_folder = os.path.join(folder_name, str(class_labels[label]))
-        print(save_folder)
         if not os.path.exists(save_folder):
             os.makedirs(save_folder)
 

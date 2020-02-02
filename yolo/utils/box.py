@@ -75,11 +75,11 @@ def nms_boxes(boxes, nms_threshold=0.3, obj_threshold=0.3):
         boxes : list of BoundBox
             non maximum supressed BoundBox instances
     """
-    print('number of boxes: ', len(boxes))
+    # print('number of boxes: ', len(boxes))
     boxes = [box for box in boxes if box.get_score() > obj_threshold]
     if len(boxes) == 0:
         return boxes
-    print('reduced boxes: ', len(boxes))
+    # print('reduced boxes: ', len(boxes))
     
     # suppress non-maximal boxes
     s1 = datetime.now()
@@ -101,8 +101,8 @@ def nms_boxes(boxes, nms_threshold=0.3, obj_threshold=0.3):
                         
     # remove the boxes which are less likely than a obj_threshold
     boxes = [box for box in boxes if box.get_score() > obj_threshold]
-    print('result boxes: ', len(boxes))
-    print('total non-max: ', datetime.now() - s1)
+    # print('result boxes: ', len(boxes))
+    # print('total non-max time: ', datetime.now() - s1)
     return boxes
 
 # image = draw_boxes(image, boxes, labels, probs, class_labels=config["model"]["labels"])
@@ -134,7 +134,7 @@ def draw_boxes(image, boxes, labels, probs, class_labels, obj_thresh=0.0, desire
     for box, label, prob in zip(boxes, labels, probs):
         label_str = class_labels[label]
         if prob > obj_thresh:
-            print(label_str + ': ' + str(prob*100) + '%')
+            # print(label_str + ': ' + str(prob*100) + '%')
                 
             # Todo: check this code
             if img_scaled.dtype == np.uint8:
