@@ -62,7 +62,7 @@ def train_fn(model,
         if valid_generator and valid_generator.steps_per_epoch != 0:
             print('Validating...')
             valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class, highest_loss_imgs, valid_fscore = _loop_validation(model, valid_generator, configs=configs, epoch=epoch)
-            logger.write_img(highest_loss_imgs)
+            # logger.write_img(highest_loss_imgs)
             save_images(log_path, configs, model, highest_loss_imgs, epoch)
             del highest_loss_imgs
         else:
