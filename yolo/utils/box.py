@@ -76,11 +76,11 @@ def nms_boxes(boxes, nms_threshold=0.3, obj_threshold=0.3):
             non maximum supressed BoundBox instances
     """
     print('number of boxes: ', len(boxes))
+    boxes = [box for box in boxes if box.get_score() > obj_threshold]
     if len(boxes) == 0:
         return boxes
-
-    boxes = [box for box in boxes if box.get_score() > obj_threshold]
     print('reduced boxes: ', len(boxes))
+    
     # suppress non-maximal boxes
     s1 = datetime.now()
     n_classes = len(boxes[0].classes)

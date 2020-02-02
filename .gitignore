@@ -21,3 +21,4 @@ weights
 datasets
 log-files
 logs-tensorboard
+save_imgs
