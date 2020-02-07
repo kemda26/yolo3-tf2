@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
-
 import numpy as np
+from scipy.special import expit
 from yolo.utils.box import BoundBox, nms_boxes, correct_yolo_boxes
 
 IDX_X = 0
@@ -103,7 +102,8 @@ def _activate_probs(objectness, classes, obj_thresh=0.3):
     
     
 def _sigmoid(x):
-    return 1. / (1. + np.exp(-x))
+    # return 1. / (1. + np.exp(-x))
+    return expit(x)
 
 
 if __name__ == '__main__':

@@ -29,13 +29,13 @@ def train_fn(model,
     es = EarlyStopping(patience=10)
     history = []
     current_time = date.today().strftime('%d_%m_%Y-') + datetime.now().strftime('%H_%M_%S')
-    
-    log_path = os.path.join('log-files', 'resnet50', current_time) # folder, backbone, time
+
+    log_path = os.path.join('log-files', configs._arch, current_time) # folder, backbone, time
     logger = Logger(log_path)
     print('---Logged Files')
 
-    writer_1 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/valid_loss' % current_time, flush_millis=10000)
-    writer_2 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/train_loss' % current_time, flush_millis=10000)
+    # writer_1 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/valid_loss' % current_time, flush_millis=10000)
+    # writer_2 = tf.contrib.summary.create_file_writer('logs-tensorboard/%s/train_loss' % current_time, flush_millis=10000)
 
     global_step = tf.Variable(0, trainable=False)
     warm_up_step = 1
@@ -62,20 +62,21 @@ def train_fn(model,
         if valid_generator and valid_generator.steps_per_epoch != 0:
             print('Validating...')
             valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class, highest_loss_imgs, valid_fscore = _loop_validation(model, valid_generator, configs=configs, epoch=epoch)
-            # logger.write_img(highest_loss_imgs)
-            save_images(log_path, configs, model, highest_loss_imgs, epoch)
+            if epoch % 5 == 0:
+                save_images(log_path, configs, model, highest_loss_imgs, epoch)
             del highest_loss_imgs
         else:
             valid_fscore = train_fscore
             valid_loss = train_loss # if no validation loss, use training loss as validation loss instead
             valid_loss_box, valid_loss_conf, valid_loss_class = train_loss_box, train_loss_conf, train_loss_class
 
-        tensorboard_logger(writer_1, writer_2, train_loss, train_loss_box, train_loss_conf, train_loss_class, valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class, epoch)
+        # tensorboard_logger(writer_1, writer_2, train_loss, train_loss_box, train_loss_conf, train_loss_class, valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class, epoch)
         print('{}-th'.format(epoch))
         print('--> train_loss = {:.4f}, train_loss_box = {:.4f}, train_loss_conf = {:.4f}, train_loss_class = {:.4f}'.format(train_loss, train_loss_box, train_loss_conf, train_loss_class))
-        print('    train_fscore = {:.4f}, precision = {:.4f}, recall = {:.4f}'.format(train_fscore['fscore'], train_fscore['precision'], train_fscore['recall']))
-        print('--> valid_loss = {:.4f}, valid_loss_box = {:.4f}, valid_loss_conf = {:.4f}, valid_loss_class = {:.4f}'.format(valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class))
-        print('    valid_fscore = {:.4f}, precision = {:.4f}, recall = {:.4f}'.format(valid_fscore['fscore'], valid_fscore['precision'], valid_fscore['recall']))
+        print('    valid_loss = {:.4f}, valid_loss_box = {:.4f}, valid_loss_conf = {:.4f}, valid_loss_class = {:.4f}'.format(valid_loss, valid_loss_box, valid_loss_conf, valid_loss_class))
+        if epoch % 5 == 0:
+            print('--> train_fscore = {:.4f}, precision = {:.4f}, recall = {:.4f}'.format(train_fscore['fscore'], train_fscore['precision'], train_fscore['recall']))
+            print('    valid_fscore = {:.4f}, precision = {:.4f}, recall = {:.4f}'.format(valid_fscore['fscore'], valid_fscore['precision'], valid_fscore['recall']))
         logger.write({ 
             'train_loss': train_loss,
             'train_box': train_loss_box,
@@ -176,7 +177,6 @@ def _loop_validation(model, generator, configs=None, epoch=None):
         y_true = [yolo_1, yolo_2, yolo_3]
         y_pred = model(image_tensor)
         loss, loss_box, loss_conf, loss_class, loss_each_img = loss_component(y_true, y_pred)
-        find_highest_loss_each_class(configs, loss_each_img, img_files, labels, highest_loss_imgs, epoch=epoch)
 
         loss_value += float(tf.cast(loss, tf.float32))
         loss_box_value += float(tf.cast(loss_box, tf.float32))
@@ -184,6 +184,7 @@ def _loop_validation(model, generator, configs=None, epoch=None):
         loss_class_value += float(tf.cast(loss_class, tf.float32))
 
         if epoch % 5 == 0:
+            find_highest_loss_each_class(configs, loss_each_img, img_files, labels, highest_loss_imgs, epoch=epoch)
             true_pos, truth, pred = calculate_fscore(configs, model, anno_files, img_files, boxes, labels)
             n_true_positives += true_pos
             n_truth += truth
@@ -253,7 +254,7 @@ def find_highest_loss_each_class(configs, loss_each_img, img_files, list_labels,
 
     for label, img_list in class_dict.items():
         img_list.sort(key=key_sort, reverse=True)
-        img_list = img_list[:number_of_images]
+        img_list = img_list[:number_of_images + 1]
         class_dict[label] = img_list
 
 
