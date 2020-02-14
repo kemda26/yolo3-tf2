@@ -5,7 +5,7 @@
 - [ ] Attention CNN (WIP)
 - [ ] Understand [Transformer](https://github.com/vinsis/math-and-ml-notes/blob/master/notebooks/Transformer%20-%20Illustration%20and%20code.ipynb)
 
-## Set Up
+## Requirement
 Install environment
 ```
 $ virtualenv --python=python3.6 venv
